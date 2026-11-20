@@ -64,8 +64,8 @@ public class AzanService extends Service {
         Prayer prayer = intent == null ? null : Prayer.fromKey(String.valueOf(intent.getStringExtra(AzanScheduler.EXTRA_PRAYER)));
         if (prayer == null) prayer = Prayer.MAGHRIB;
         long at = intent == null ? System.currentTimeMillis() : intent.getLongExtra(AzanScheduler.EXTRA_AT, System.currentTimeMillis());
-        java.time.LocalTime t = ZonedDateTime.ofInstant(Instant.ofEpochMilli(at), PrayerTimes.MY).toLocalTime();
-        String time = java.time.format.DateTimeFormatter.ofPattern(DateFormat.is24HourFormat(this) ? "H:mm" : "h:mm a", java.util.Locale.US).format(t);
+        String time = PrayerBar.clock(ZonedDateTime.ofInstant(Instant.ofEpochMilli(at), PrayerTimes.MY).toLocalTime(),
+                DateFormat.is24HourFormat(this));
         overlay = AzanOverlay.show(this, cfg.prayer, prayer, time, reducedMotion);
         play(prayer);
         return START_NOT_STICKY;

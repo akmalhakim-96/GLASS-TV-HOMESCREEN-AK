@@ -48,11 +48,16 @@ final class PrayerStore {
 
     /** Whether a fetch is due now, with a one-hour pause after a failed one. */
     static boolean dueNow(Context c, String zone) {
+        return dueNow(c, zone, zone.isEmpty() ? null : load(c, zone));
+    }
+
+    /** As above, with times already loaded for this zone (or null), so Home need not parse them again. */
+    static boolean dueNow(Context c, String zone, PrayerTimes cached) {
         if (zone.isEmpty()) return false;
         SharedPreferences p = prefs(c);
         long now = System.currentTimeMillis();
         if (now - p.getLong("prayer_failed_at", 0) < RETRY_MS) return false;
-        return due(load(c, zone), p.getString("prayer_zone", ""), zone, p.getLong("prayer_fetched_at", 0), now,
+        return due(cached, p.getString("prayer_zone", ""), zone, p.getLong("prayer_fetched_at", 0), now,
                 LocalDate.now(PrayerTimes.MY));
     }
 

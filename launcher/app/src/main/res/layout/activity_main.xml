@@ -67,6 +67,15 @@
             android:maxLines="2"
             android:ellipsize="end"
             android:visibility="gone" />
+
+        <!-- The day's five prayer times (PrayerBar), the next one in gold. -->
+        <LinearLayout
+            android:id="@+id/prayerChips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
@@ -177,6 +186,24 @@
                                 android:fontVariationSettings="'wght' 400"
                                 android:letterSpacing="0.14"
                                 android:textAllCaps="true" />
+
+                            <!-- Hijri date from JAKIM ("21 Jamadilawal 1448H"), when prayer times are on. -->
+                            <TextView
+                                android:id="@+id/hijriDate"
+                                android:gravity="left"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:singleLine="true"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:textColor="#BFFFFFFF"
+                                android:textSize="12sp"
+                                android:fontFamily="@font/outfit"
+                                android:fontVariationSettings="'wght' 400"
+                                android:letterSpacing="0.14"
+                                android:textAllCaps="true"
+                                android:visibility="gone" />
                         </LinearLayout>
                     </FrameLayout>
                 </LinearLayout>
@@ -190,6 +217,16 @@
                 android:layout_alignBottom="@id/leftBlock"
                 android:layout_marginBottom="6dp"
                 android:orientation="horizontal">
+
+                <!-- The next prayer and how long until it (PrayerBar). Not a button: never focused. -->
+                <TextView
+                    android:id="@+id/prayerPill"
+                    style="@style/TopButtonBase"
+                    android:textColor="#FFFFFFFF"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:singleLine="true"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/btnInputs"

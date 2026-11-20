@@ -178,6 +178,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private android.graphics.Bitmap wallBitmap;
     /** Settings kept for the places refresh, which runs after onCreate. */
     private Config config;
+    /** Prayer times on Home (PrayerBar); prayerTimes is null until loaded, or when off. */
+    private PrayerBar prayerBar;
+    private PrayerTimes prayerTimes;
+    private volatile boolean prayerLoadRunning;
+    private int prayerTicks;
     /** Pictures of places are on (see PlaceWallpapers); they are dimmed behind the tiles. */
     private boolean placesMode;
     private volatile boolean placesRefreshRunning;
@@ -233,6 +238,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateShamsiDate();
             updateWifiLabel();
             refreshPlacesIfDue();
+            updatePrayerBar();
+            if (++prayerTicks % 60 == 0) loadPrayerTimes();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -355,6 +362,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (has) moveTopHighlight(v);
             });
         }
+        TextView prayerPill = findViewById(R.id.prayerPill);
+        prayerPill.setBackground(new GlassDrawable(prayerPill, 21 * density, density, glider));
+        Backdrop.watch(prayerPill);
+        prayerBar = new PrayerBar(this, prayerPill, findViewById(R.id.prayerChips), findViewById(R.id.hijriDate));
+        loadPrayerTimes();
         // The apps rise into place on the first launch after the TV starts, and only then. Setting
         // the animation arms it for the grid's first draw, so on any later fresh start (Android
         // closing Home while an app was open) it is not set at all: armed, it drew the dock's tray
@@ -671,6 +683,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateShamsiDate();
         updateWifiLabel();
         updateInputsButton();
+        updatePrayerBar();
         startWallpaperRotation();
         handler.postDelayed(minuteTick, MINUTE_MS);
         handler.removeCallbacks(cacheClean);
@@ -1454,6 +1467,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.removeOnScrollListener(focusWhenSettled);
         grid.addOnScrollListener(focusWhenSettled);
         grid.smoothScrollToPosition(pos);
+    }
+
+    // ---- prayer times ----------------------------------------------------------------------------
+
+    private void updatePrayerBar() {
+        if (prayerBar != null) prayerBar.update(prayerTimes, java.time.ZonedDateTime.now(PrayerTimes.MY));
+    }
+
+    /**
+     * Off the main thread: reads the cached JAKIM year, fetches it again when due, sets the next azan
+     * alarm, then shows the times. Nothing happens when prayer_zone is not set.
+     */
+    private void loadPrayerTimes() {
+        PrayerSettings s = config.prayer;
+        if (!s.enabled() || prayerLoadRunning) return;
+        prayerLoadRunning = true;
+        final PrayerTimes current = prayerTimes;
+        new Thread(() -> {
+            try {
+                PrayerTimes t = current != null ? current : PrayerStore.load(this, s.zone);
+                if (PrayerStore.dueNow(this, s.zone, t) && PrayerStore.refresh(this, s.zone)) {
+                    t = PrayerStore.load(this, s.zone);
+                }
+                AzanScheduler.schedule(this);
+                final PrayerTimes loaded = t;
+                handler.post(() -> {
+                    prayerTimes = loaded;
+                    updatePrayerBar();
+                });
+            } finally {
+                prayerLoadRunning = false;
+            }
+        }, "prayer-times").start();
     }
 
     // ---- top bar ---------------------------------------------------------------------------------
