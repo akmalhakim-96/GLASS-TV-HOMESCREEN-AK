@@ -13,3 +13,6 @@ Ayat di tengah skrin boleh ditukar dengan menambah dalam config.json, contohnya:
   "azan_dim": 1
 {waktu} dan {zon} diganti secara automatik. azan_dim: 0 ringan, 1 sederhana, 2 gelap.
 Untuk azan pada waktu tertentu sahaja: "azan_prayers": ["subuh", "maghrib"]
+
+Bismillah emas dipapar setiap kali TV dihidupkan, kemudian Home. Tekan apa-apa butang untuk langkau.
+Untuk matikan: tambah "bismillah": false dalam config.json.

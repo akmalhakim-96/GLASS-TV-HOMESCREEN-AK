@@ -68,6 +68,8 @@ final class Config {
     final boolean overlayApplied;
     /** JAKIM prayer times and azan (prayer_zone and the azan_* keys); off without a zone. */
     final PrayerSettings prayer;
+    /** Bismillah when the TV turns on (BismillahSplash); "bismillah": false turns it off. */
+    final boolean bismillah;
 
     private Config(List<String> dockApps, List<String> hiddenApps, String liveTvPackage, String liveTvAction,
                    String sourcePanelService, String sourcePanelAction, String inputAction,
@@ -76,8 +78,9 @@ final class Config {
                    boolean showHomeSettingsShortcut, boolean showNetworkPill, boolean showLiveTv,
                    int backgroundColor,
                    File wallpaper, List<File> wallpapers, long wallpaperIntervalMs,
-                   boolean places, int cacheCleanDays, boolean overlayApplied, PrayerSettings prayer) {
+                   boolean places, int cacheCleanDays, boolean overlayApplied, PrayerSettings prayer, boolean bismillah) {
         this.prayer = prayer;
+        this.bismillah = bismillah;
         this.dockApps = Collections.unmodifiableList(dockApps);
         this.hiddenApps = Collections.unmodifiableList(hiddenApps);
         this.liveTvPackage = liveTvPackage;
@@ -177,7 +180,7 @@ final class Config {
         return new Config(dock, hidden, liveTv, liveTvAction, panelService, panelAction, inputAction,
                 Math.max(1, columns), Math.max(0, rowsBelow), shamsi, moduleCards, reducedMotion,
                 vpn, homeSettings, networkPill, liveTvRow, background, wallpaper, wallpapers, wallpaperIntervalMs,
-                places, cacheCleanDays, applied, PrayerSettings.fromJson(json));
+                places, cacheCleanDays, applied, PrayerSettings.fromJson(json), BismillahSplash.enabled(json));
     }
 
     /** Reads and parses the overlay; any problem means "no overlay", never a crash on the home screen. */

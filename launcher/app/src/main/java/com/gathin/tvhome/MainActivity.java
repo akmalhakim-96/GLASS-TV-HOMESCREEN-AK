@@ -183,6 +183,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private PrayerTimes prayerTimes;
     private volatile boolean prayerLoadRunning;
     private int prayerTicks;
+    /** Bismillah when the TV turns on: after boot, and on every screen-on while Home's process lives. */
+    static final String EXTRA_BISMILLAH = "com.gathin.tvhome.BISMILLAH";
+    private BismillahSplash bismillah;
+    private BroadcastReceiver screenOn;
     /** Pictures of places are on (see PlaceWallpapers); they are dimmed behind the tiles. */
     private boolean placesMode;
     private volatile boolean placesRefreshRunning;
@@ -268,6 +272,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else launch.edit().putLong("boot_at", bootAt).apply();
         root.setBackgroundColor(cfg.backgroundColor);
         config = cfg;
+        // The first Home after the TV boots opens with Bismillah; later screen-ons bring Home back with it.
+        if (cfg.bismillah && !tilesAnimatedOnce) showBismillah();
+        if (cfg.bismillah) {
+            screenOn = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    startActivity(new Intent(MainActivity.this, MainActivity.class)
+                            .putExtra(EXTRA_BISMILLAH, true)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+                }
+            };
+            IntentFilter on = new IntentFilter(Intent.ACTION_SCREEN_ON);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(screenOn, on, Context.RECEIVER_NOT_EXPORTED);
+            else registerReceiver(screenOn, on);
+        }
         wallpapers = cfg.wallpapers;
         wallpaperIntervalMs = cfg.wallpaperIntervalMs;
         placesMode = cfg.places;
@@ -646,6 +665,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (intent != null && intent.getBooleanExtra(EXTRA_BISMILLAH, false)) {
+            showBismillah();
+            return;
+        }
         if (intent == null || !intent.hasCategory(Intent.CATEGORY_HOME)) return;
         // Home pressed on Home goes back to the first app. Home pressed in another app comes back to
         // the app you left from: resetting then made the selection run from it to the first app.
@@ -800,6 +823,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (screenOn != null) unregisterReceiver(screenOn);
         wallDecoder.shutdownNow();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
@@ -1383,6 +1407,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
+        // Any key skips Bismillah to Home; the key itself does nothing else.
+        if (bismillah != null && bismillah.showing()) {
+            if (event.getAction() == KeyEvent.ACTION_UP) bismillah.dismiss();
+            return true;
+        }
         if (code == swallowRelease && event.getAction() == KeyEvent.ACTION_UP) {
             swallowRelease = -1;
             return true;
@@ -1468,6 +1497,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.removeOnScrollListener(focusWhenSettled);
         grid.addOnScrollListener(focusWhenSettled);
         grid.smoothScrollToPosition(pos);
+    }
+
+    // ---- bismillah --------------------------------------------------------------------------------
+
+    private void showBismillah() {
+        if (bismillah != null && bismillah.showing()) return;
+        bismillah = BismillahSplash.show(this, root, reducedMotion);
     }
 
     // ---- prayer times ----------------------------------------------------------------------------
