@@ -33,5 +33,10 @@ try { Get-Content $config -Raw | ConvertFrom-Json | Out-Null } catch { throw "$c
 & $py -I tv.py --push $config "$dir/config.json"
 $wall = Join-Path $Theme 'wallpaper.jpg'
 if (Test-Path $wall) { & $py -I b64push.py $wall "$dir/wallpaper.jpg" } else { & $py -I tv.py "rm -f $dir/wallpaper.jpg" | Out-Null }
+# Azan recordings for the prayer times (azan.mp3, and azan_subuh.mp3 for Subuh); removed when the theme has none.
+foreach ($name in @('azan.mp3', 'azan_subuh.mp3')) {
+    $mp3 = Join-Path $Theme $name
+    if (Test-Path $mp3) { & $py -I b64push.py $mp3 "$dir/$name" } else { & $py -I tv.py "rm -f $dir/$name" | Out-Null }
+}
 & $py -I tv.py "am force-stop $pkg; am start -n $pkg/.MainActivity >/dev/null; echo applied"
 Write-Host "Theme $(Split-Path $Theme -Leaf) is on the TV. Undo with: tools\theme.ps1 -TvHost $TvHost -Reset"
