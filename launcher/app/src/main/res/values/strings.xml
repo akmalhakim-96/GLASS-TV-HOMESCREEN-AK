@@ -44,4 +44,6 @@
     <string name="card_state_new_label">New name</string>
     <string name="tile_move">Move</string>
     <string name="tile_app_info">App info</string>
+    <string name="azan_channel" translatable="false">Azan</string>
+    <string name="azan_continue" translatable="false">OK · teruskan</string>
 </resources>

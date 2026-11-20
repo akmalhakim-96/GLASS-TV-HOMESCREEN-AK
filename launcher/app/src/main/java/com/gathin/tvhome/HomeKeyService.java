@@ -34,6 +34,8 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        // While the azan plays, the first OK stops it instead of reaching the app (AzanState).
+        if (AzanState.swallowOk(event.getKeyCode(), event.getAction())) return true;
         // The stock launcher handled the remote's Settings button; with it disabled the button does nothing.
         if (isSettingsKey(event)) {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {

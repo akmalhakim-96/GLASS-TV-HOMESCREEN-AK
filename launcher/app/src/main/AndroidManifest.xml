@@ -9,6 +9,10 @@
     <!-- Only for the weekly pictures of places (PlaceWallpapers); "places": false keeps the launcher offline. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Azan: the island over other apps (granted with appops at install) and the playback service. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed on Android 10 to read the Wi-Fi network name; granted over adb at install time. -->
@@ -109,6 +113,11 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/input_key_service" />
         </service>
+        <service
+            android:name=".AzanService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <!-- Azan: the alarm for the next prayer, and the events after which it is set again. -->
         <receiver
             android:name=".AzanReceiver"
