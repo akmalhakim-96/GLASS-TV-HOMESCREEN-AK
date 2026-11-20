@@ -43,7 +43,12 @@ final class PrayerStore {
     static boolean due(PrayerTimes cached, String cachedZone, String zone, long fetchedAtMs, long nowMs, LocalDate today) {
         if (cached == null || !zone.equals(cachedZone)) return true;
         if (nowMs - fetchedAtMs >= 30 * DAY_MS) return true;
-        return cached.lastDay().isBefore(today.plusDays(7));
+        LocalDate last = cached.lastDay();
+        if (last.isBefore(today)) return true;
+        // JAKIM gives one calendar year at a time: with this year complete there is nothing more to
+        // fetch until 1 January, so late December must not download the same year again and again.
+        if (last.getYear() == today.getYear() && last.getMonthValue() == 12 && last.getDayOfMonth() == 31) return false;
+        return last.isBefore(today.plusDays(7));
     }
 
     /** Whether a fetch is due now, with a one-hour pause after a failed one. */
@@ -90,18 +95,26 @@ final class PrayerStore {
         try {
             if (c.getResponseCode() != 200) throw new IllegalStateException("HTTP " + c.getResponseCode());
             try (InputStream in = c.getInputStream()) {
-                return readAll(in, 2 << 20);
+                return readAll(in, 2 << 20, System.currentTimeMillis() + DOWNLOAD_MS);
             }
         } finally {
             c.disconnect();
         }
     }
 
+    /** Whole-download limit: the read timeout is per read, so a trickling answer could last minutes. */
+    private static final long DOWNLOAD_MS = 40_000;
+
     private static byte[] readAll(InputStream in, int max) throws Exception {
+        return readAll(in, max, Long.MAX_VALUE);
+    }
+
+    static byte[] readAll(InputStream in, int max, long deadlineMs) throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] buf = new byte[16 * 1024];
         int r;
         while ((r = in.read(buf)) > 0) {
+            if (System.currentTimeMillis() > deadlineMs) throw new java.io.IOException("download too slow");
             out.write(buf, 0, r);
             if (out.size() > max) throw new IllegalStateException("too large");
         }

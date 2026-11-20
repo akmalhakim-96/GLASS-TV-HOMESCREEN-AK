@@ -18,6 +18,7 @@ import java.time.ZonedDateTime;
 final class AzanScheduler {
     private static final String TAG = "TvHome.Azan";
     static final String ACTION_AZAN = "com.gathin.tvhome.AZAN";
+    static final String ACTION_REFRESH = "com.gathin.tvhome.PRAYER_REFRESH";
     static final String EXTRA_PRAYER = "prayer";
     static final String EXTRA_AT = "at";
     /** An alarm later than this after its prayer (the TV was asleep or off) is not played. */
@@ -34,6 +35,15 @@ final class AzanScheduler {
         return null;
     }
 
+    /**
+     * When to try again for prayer times once there is no azan left to set: 00:05 the day after the
+     * cached data ends, or in an hour when there is no data at all (no internet yet, JAKIM down).
+     */
+    static ZonedDateTime refreshAt(PrayerTimes t, ZonedDateTime now) {
+        if (t == null) return now.plusHours(1);
+        return t.lastDay().plusDays(1).atTime(0, 5).atZone(PrayerTimes.MY);
+    }
+
     static boolean shouldPlay(long prayerAtMs, long nowMs) {
         long late = nowMs - prayerAtMs;
         return late >= 0 && late <= LATE_MS;
@@ -47,7 +57,18 @@ final class AzanScheduler {
         Next n = t == null ? null : nextAzan(t, s, ZonedDateTime.now(PrayerTimes.MY));
         if (n == null) {
             am.cancel(pending(c, null));
-            Log.i(TAG, "no azan scheduled");
+            PendingIntent retry = PendingIntent.getBroadcast(c, 1,
+                    new Intent(c, AzanReceiver.class).setAction(ACTION_REFRESH),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            if (s.enabled()) {
+                // Out of data (year end) or none yet: wake up to fetch again, then set the azan.
+                long when = refreshAt(t, ZonedDateTime.now(PrayerTimes.MY)).toInstant().toEpochMilli();
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, retry);
+                Log.i(TAG, "no azan in the data; refetch at " + when);
+            } else {
+                am.cancel(retry);
+                Log.i(TAG, "prayer times off");
+            }
             return;
         }
         long at = n.time.toInstant().toEpochMilli();

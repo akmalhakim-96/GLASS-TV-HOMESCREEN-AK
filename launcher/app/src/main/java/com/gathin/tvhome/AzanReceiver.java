@@ -37,15 +37,18 @@ public class AzanReceiver extends BroadcastReceiver {
                     n == null ? System.currentTimeMillis() : n.time.toInstant().toEpochMilli());
             return;
         }
+        // Set the next alarm within the broadcast; a refetch (network, up to ~70 s) runs after it is
+        // finished, so a slow JAKIM can never time the broadcast out while an azan is playing.
+        Context app = c.getApplicationContext();
         PendingResult result = goAsync();
         new Thread(() -> {
             try {
-                AzanScheduler.schedule(c);
-                String zone = Config.load(c).prayer.zone;
-                if (PrayerStore.dueNow(c, zone) && PrayerStore.refresh(c, zone)) AzanScheduler.schedule(c);
+                AzanScheduler.schedule(app);
             } finally {
                 result.finish();
             }
+            String zone = Config.load(app).prayer.zone;
+            if (PrayerStore.dueNow(app, zone) && PrayerStore.refresh(app, zone)) AzanScheduler.schedule(app);
         }, "azan-schedule").start();
     }
 

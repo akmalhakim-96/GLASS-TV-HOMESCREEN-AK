@@ -81,4 +81,28 @@ public class PrayerSettingsTest {
         assertTrue(PrayerStore.due(PrayerTimesTest.load(), "SGR01", "SGR01", NOW, NOW, nov(24)));
         assertFalse(PrayerStore.due(PrayerTimesTest.load(), "SGR01", "SGR01", NOW, NOW, nov(20)));
     }
+
+    private static PrayerTimes untilDec31() throws Exception {
+        String day = "\"hijri\":\"1448-07-01\",\"fajr\":\"05:50:00\",\"syuruk\":\"07:00:00\",\"dhuhr\":\"13:10:00\","
+                + "\"asr\":\"16:30:00\",\"maghrib\":\"19:10:00\",\"isha\":\"20:20:00\"";
+        return PrayerTimes.parse("{\"status\":\"OK!\",\"prayerTime\":[{\"date\":\"30-Dis-2026\"," + day
+                + "},{\"date\":\"31-Dis-2026\"," + day + "}]}");
+    }
+
+    @Test
+    public void wholeYearIsNotRefetchedInLateDecember() throws Exception {
+        assertFalse(PrayerStore.due(untilDec31(), "SGR01", "SGR01", NOW, NOW, LocalDate.of(2026, 12, 26)));
+        assertFalse(PrayerStore.due(untilDec31(), "SGR01", "SGR01", NOW, NOW, LocalDate.of(2026, 12, 31)));
+    }
+
+    @Test
+    public void newYearIsDue() throws Exception {
+        assertTrue(PrayerStore.due(untilDec31(), "SGR01", "SGR01", NOW, NOW, LocalDate.of(2027, 1, 1)));
+    }
+
+    @Test(expected = java.io.IOException.class)
+    public void slowDownloadStopsAtTheDeadline() throws Exception {
+        java.io.InputStream slow = new java.io.ByteArrayInputStream(new byte[100_000]);
+        PrayerStore.readAll(slow, 2 << 20, System.currentTimeMillis() - 1);
+    }
 }

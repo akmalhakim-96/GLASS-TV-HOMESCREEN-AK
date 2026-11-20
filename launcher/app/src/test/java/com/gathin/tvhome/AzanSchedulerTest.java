@@ -50,4 +50,17 @@ public class AzanSchedulerTest {
         assertFalse(AzanScheduler.shouldPlay(0, 121_000));
         assertFalse(AzanScheduler.shouldPlay(10_000, 0));
     }
+
+    @Test
+    public void refreshAfterTheDataEnds() {
+        ZonedDateTime at = AzanScheduler.refreshAt(PrayerTimesTest.load(),
+                ZonedDateTime.of(2026, 11, 30, 21, 0, 0, 0, PrayerTimes.MY));
+        assertEquals(ZonedDateTime.of(2026, 12, 1, 0, 5, 0, 0, PrayerTimes.MY), at);
+    }
+
+    @Test
+    public void retryInAnHourWithoutData() {
+        ZonedDateTime now = ZonedDateTime.of(2026, 11, 30, 21, 0, 0, 0, PrayerTimes.MY);
+        assertEquals(now.plusHours(1), AzanScheduler.refreshAt(null, now));
+    }
 }

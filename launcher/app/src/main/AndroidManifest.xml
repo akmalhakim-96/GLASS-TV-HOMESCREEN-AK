@@ -9,6 +9,11 @@
     <!-- Only for the weekly pictures of places (PlaceWallpapers); "places": false keeps the launcher offline. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- The azan alarm must be exact: an alarm more than 2 minutes late is not played. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
     <!-- Azan: the island over other apps (granted with appops at install) and the playback service. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
