@@ -12,3 +12,7 @@ backup/
 # App banners for the webOS simulator preview only: other companies' logos, kept out of the repository.
 webos/samples/
 *.ipk
+remote/local.properties
+remote/.gradle/
+remote/app/build/
+remote/build/
