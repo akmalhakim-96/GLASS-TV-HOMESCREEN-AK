@@ -12,6 +12,15 @@
         android:layout_height="match_parent"
         android:alpha="0" />
 
+    <!-- A soft dark band over the top of the picture, so the clock, the prayer pill and the prayer times
+         stay readable over a bright photo. -->
+    <View
+        android:id="@+id/topScrim"
+        android:layout_width="match_parent"
+        android:layout_height="420dp"
+        android:background="@drawable/top_scrim"
+        android:importantForAccessibility="no" />
+
     <!-- Top shelf: the place's name, its country and what it is about, positioned above the dock in code.
          The width is capped in code to a share of the space between the side paddings, so the
          description wraps in a column instead of running the width of the screen. -->
@@ -186,27 +195,30 @@
                                 android:fontVariationSettings="'wght' 400"
                                 android:letterSpacing="0.14"
                                 android:textAllCaps="true" />
-
-                            <!-- Hijri date from JAKIM ("21 Jamadilawal 1448H"), when prayer times are on. -->
-                            <TextView
-                                android:id="@+id/hijriDate"
-                                android:gravity="left"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="5dp"
-                                android:singleLine="true"
-                                android:ellipsize="end"
-                                android:includeFontPadding="false"
-                                android:textColor="#BFFFFFFF"
-                                android:textSize="12sp"
-                                android:fontFamily="@font/outfit"
-                                android:fontVariationSettings="'wght' 400"
-                                android:letterSpacing="0.14"
-                                android:textAllCaps="true"
-                                android:visibility="gone" />
                         </LinearLayout>
                     </FrameLayout>
                 </LinearLayout>
+
+                <!-- Hijri date from JAKIM ("11 Jamadilakhir 1448H") under the clock, when prayer times are on.
+                     Kept out of the date column: AM/PM is placed against that column's height. -->
+                <TextView
+                    android:id="@+id/hijriDate"
+                    android:gravity="left"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:textColor="#D9FFFFFF"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 500"
+                    android:letterSpacing="0.14"
+                    android:textAllCaps="true"
+                    android:shadowColor="#99000000"
+                    android:shadowRadius="6"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout

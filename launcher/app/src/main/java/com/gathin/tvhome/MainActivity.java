@@ -382,8 +382,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
         }
         TextView prayerPill = findViewById(R.id.prayerPill);
-        prayerPill.setBackground(new GlassDrawable(prayerPill, 21 * density, density, glider));
-        Backdrop.watch(prayerPill);
+        // Dark glass rather than the light frost of the buttons: it carries text that must read over any photo.
+        android.graphics.drawable.GradientDrawable pillBg = new android.graphics.drawable.GradientDrawable();
+        pillBg.setColor(0x8C000000);
+        pillBg.setCornerRadius(21 * density);
+        pillBg.setStroke(Math.max(1, Math.round(density)), 0x59FFFFFF);
+        prayerPill.setBackground(pillBg);
+        prayerPill.setShadowLayer(4, 0, 1, 0x99000000);
         prayerBar = new PrayerBar(this, prayerPill, findViewById(R.id.prayerChips), findViewById(R.id.hijriDate));
         loadPrayerTimes();
         // The apps rise into place on the first launch after the TV starts, and only then. Setting
@@ -708,6 +713,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateInputsButton();
         updatePrayerBar();
         loadPrayerTimes();
+        // Home came up over the azan screen (a Home key the accessibility service could not hold):
+        // the azan screen goes back on top until OK.
+        if (AzanState.screenShowing()) {
+            startActivity(new Intent(this, AzanActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+        }
         startWallpaperRotation();
         handler.postDelayed(minuteTick, MINUTE_MS);
         handler.removeCallbacks(cacheClean);

@@ -63,4 +63,16 @@ public class AzanStateTest {
         AzanState.end();   // the azan finished before OK was released
         assertFalse(AzanState.swallowOk(KEYCODE_DPAD_CENTER, ACTION_DOWN));
     }
+
+    @Test
+    public void homeAndBackWaitForOkWhileAzanShows() {
+        assertFalse(AzanState.swallowNav(android.view.KeyEvent.KEYCODE_ALL_APPS));
+        AzanState.begin();
+        assertTrue(AzanState.swallowNav(android.view.KeyEvent.KEYCODE_ALL_APPS));
+        assertTrue(AzanState.swallowNav(KEYCODE_HOME));
+        assertTrue(AzanState.swallowNav(KEYCODE_BACK));
+        assertFalse(AzanState.swallowNav(KEYCODE_VOLUME_UP));
+        AzanState.end();
+        assertFalse(AzanState.swallowNav(KEYCODE_BACK));
+    }
 }

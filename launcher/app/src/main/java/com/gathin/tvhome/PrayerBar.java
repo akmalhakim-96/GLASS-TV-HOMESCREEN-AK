@@ -97,7 +97,7 @@ final class PrayerBar {
         chip.setPadding(pad, 0, pad, 0);
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(15 * dp);
-        bg.setColor(next ? 0x4DFFBE5A : 0x24FFFFFF);
+        bg.setColor(next ? 0x8C8A6420 : 0x73000000);   // dark enough to read over a bright photo
         bg.setStroke(Math.max(1, Math.round(dp)), next ? 0xE6FFD28C : 0x61FFFFFF);
         chip.setBackground(bg);
         TextView l = text(label.toUpperCase(Locale.ROOT), 11, 0xB3FFFFFF);
@@ -120,6 +120,7 @@ final class PrayerBar {
         t.setTextColor(color);
         t.setTypeface(font);
         t.setIncludeFontPadding(false);
+        t.setShadowLayer(4, 0, 1, 0x99000000);
         return t;
     }
 }

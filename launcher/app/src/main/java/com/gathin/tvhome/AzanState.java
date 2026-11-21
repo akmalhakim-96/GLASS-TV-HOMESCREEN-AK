@@ -12,6 +12,8 @@ final class AzanState {
     /** An OK press was swallowed on its way down; swallow its release too. */
     private static boolean pendingUp;
     private static Runnable stopper;
+    /** The azan screen is showing (AzanActivity), so Home can bring it back to the front. */
+    private static boolean screen;
 
     private AzanState() {}
 
@@ -29,8 +31,20 @@ final class AzanState {
         pendingUp = false;   // never leave a stale press that would eat a later OK
     }
 
+    static synchronized void setScreen(boolean showing) {
+        screen = showing;
+    }
+
+    static synchronized boolean screenShowing() { return screen; }
+
     static synchronized void setStopper(Runnable r) {
         stopper = r;
+    }
+
+    /** While the azan screen shows, Home and Back wait for OK: the screen stays until it is pressed. */
+    static synchronized boolean swallowNav(int keyCode) {
+        if (!active) return false;
+        return keyCode == KeyEvent.KEYCODE_ALL_APPS || keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_BACK;
     }
 
     static boolean swallowOk(int keyCode, int action) {

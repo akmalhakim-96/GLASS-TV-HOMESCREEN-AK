@@ -25,8 +25,8 @@ import java.time.ZonedDateTime;
 
 /**
  * Plays one azan: asks the app in front to lower its sound, plays the owner's MP3 (azan_subuh.mp3 for
- * Subuh when there is one, else azan.mp3), shows the overlay, and undoes all of it when the MP3 ends or
- * OK is pressed. Without an MP3 the overlay stays for a minute, silent.
+ * Subuh when there is one, else azan.mp3) while the app in front pauses, and opens the azan screen
+ * (AzanActivity), which stays until OK. Without an MP3 the screen still shows, silent.
  */
 public class AzanService extends Service {
     private static final String TAG = "TvHome.Azan";
@@ -34,13 +34,12 @@ public class AzanService extends Service {
     private static final String CHANNEL = "azan";
     private static final long SILENT_MS = 60_000;
     private static final long MAX_MS = 10 * 60_000;
+    private static final long SCREEN_WAIT_MS = 15_000;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private MediaPlayer player;
     private AudioManager audio;
     private AudioFocusRequest focus;
-    private AzanOverlay overlay;
-    private boolean reducedMotion;
     private boolean running;
 
     @Override
@@ -52,21 +51,29 @@ public class AzanService extends Service {
         }
         if (running) return START_NOT_STICKY;   // this one is already playing
         if (!AzanState.begin()) {
-            stopSelf(startId);
-            return START_NOT_STICKY;
+            // The last azan's screen is still up (nobody pressed OK): this prayer takes it over.
+            AzanState.end();
+            AzanState.begin();
         }
         running = true;
-        AzanState.setStopper(() -> handler.post(this::finish));
         handler.postDelayed(this::finish, MAX_MS);
 
-        Config cfg = Config.load(this);
-        reducedMotion = cfg.reducedMotion;
         Prayer prayer = intent == null ? null : Prayer.fromKey(String.valueOf(intent.getStringExtra(AzanScheduler.EXTRA_PRAYER)));
         if (prayer == null) prayer = Prayer.MAGHRIB;
         long at = intent == null ? System.currentTimeMillis() : intent.getLongExtra(AzanScheduler.EXTRA_AT, System.currentTimeMillis());
-        String time = PrayerBar.clock(ZonedDateTime.ofInstant(Instant.ofEpochMilli(at), PrayerTimes.MY).toLocalTime(),
-                DateFormat.is24HourFormat(this));
-        overlay = AzanOverlay.show(this, cfg.prayer, prayer, time, reducedMotion);
+        try {
+            startActivity(new Intent(this, AzanActivity.class)
+                    .putExtra(AzanScheduler.EXTRA_PRAYER, prayer.key())
+                    .putExtra(AzanScheduler.EXTRA_AT, at)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
+        } catch (RuntimeException e) {
+            Log.w(TAG, "azan screen refused: " + e);
+        }
+        // A screen that never came up must not keep Home and Back held.
+        // Its own handler: stopping the sound must not cancel this check.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (!AzanState.screenShowing()) AzanState.end();
+        }, SCREEN_WAIT_MS);
         play(prayer);
         return START_NOT_STICKY;
     }
@@ -86,7 +93,7 @@ public class AzanService extends Service {
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build();
         audio = (AudioManager) getSystemService(AUDIO_SERVICE);
-        focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+        focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(attrs)
                 .setOnAudioFocusChangeListener(change -> { })
                 .build();
@@ -109,6 +116,7 @@ public class AzanService extends Service {
         }
     }
 
+    /** Stops the sound and the service. The azan screen stays until OK (AzanActivity ends the state). */
     private void finish() {
         handler.removeCallbacksAndMessages(null);
         if (player != null) {
@@ -120,13 +128,7 @@ public class AzanService extends Service {
         }
         if (audio != null && focus != null) audio.abandonAudioFocusRequest(focus);
         focus = null;
-        if (overlay != null) overlay.remove(reducedMotion);
-        overlay = null;
-        if (running) {
-            running = false;
-            AzanState.setStopper(null);
-            AzanState.end();
-        }
+        running = false;
         stopForeground(true);
         stopSelf();
     }
