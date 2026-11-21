@@ -19,6 +19,12 @@ final class HomeSetup {
     private static final String SERVICE = PKG + "/.HomeKeyService";
     private static final String[] KNOWN_STOCK = {"com.google.android.tvlauncher", "com.google.android.apps.tv.launcherx",
             "com.google.android.leanbacklauncher", "com.mitv.tvhome"};
+    /**
+     * Apps known to claim Home without being a launcher, which leave Android showing its chooser once
+     * the stock launcher is off: Xiaomi's factory test app and Google's setup wizard. Only these are
+     * ever disabled (never uninstalled), and a rollback turns them back on.
+     */
+    private static final String[] EXTRA_HOME = {"com.duokan.factorytest", "com.google.android.tungsten.setupwraith"};
     private static final String RESOLVE_HOME =
             "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME";
     private static final String HOME_CLAIMANTS =
@@ -68,6 +74,13 @@ final class HomeSetup {
         throw new SetupException("Home TV sekarang ialah " + pkg + ", yang tidak dikenali. Tiada apa yang diubah.");
     }
 
+    /** The known non-launcher Home claimants present on this TV, in list order. */
+    static java.util.List<String> extraHomeApps(String claimants) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String k : EXTRA_HOME) if (claimants != null && claimants.contains(k + "/")) out.add(k);
+        return out;
+    }
+
     /** "pid|pid|focus": Glass TV is in front and the same process both times (not crashing). */
     static boolean healthy(String line) {
         String[] p = lastLine(line).split("\\|", 3);
@@ -94,6 +107,7 @@ final class HomeSetup {
     static String run(Context c, String host, Sender.Progress p) {
         lastReport = null;
         String[] health = {""};
+        java.util.List<String> disabledExtras = new java.util.ArrayList<>();
         try (Tv tv = Tv.connect(c, host)) {
             p.step("Memeriksa TV…");
             if (!sdkOk(tv.shell("getprop ro.build.version.sdk"))) {
@@ -127,7 +141,21 @@ final class HomeSetup {
                 if (!stock.equals(NONE)) tv.shell("pm disable-user --user 0 " + stock);
                 tv.shell("cmd package set-home-activity --user 0 " + COMPONENT);
                 String now = lastLine(tv.shell(RESOLVE_HOME));
-                if (!now.startsWith(PKG + "/")) throw new SetupException("Home masih ke " + now + ".");
+                if (!now.startsWith(PKG + "/")) {
+                    // Android's chooser: another app also claims Home. Turn off the known ones and try again.
+                    String claimants = tv.shell(HOME_CLAIMANTS);
+                    for (String extra : extraHomeApps(claimants)) {
+                        p.step("Mematikan " + extra + " (turut mengaku sebagai Home)…");
+                        tv.shell("pm disable-user --user 0 " + extra);
+                        disabledExtras.add(extra);
+                    }
+                    tv.shell("cmd package set-home-activity --user 0 " + COMPONENT);
+                    now = lastLine(tv.shell(RESOLVE_HOME));
+                    if (!now.startsWith(PKG + "/")) {
+                        health[0] = "Home claimants:\n" + claimants.trim();
+                        throw new SetupException("Home masih ke " + now + ".");
+                    }
+                }
                 tv.shell("input keyevent KEYCODE_HOME");
                 health[0] = tv.shell(HEALTH);
                 if (!healthy(health[0])) throw new SetupException("Butang Home tidak membuka Glass TV.");
@@ -141,6 +169,12 @@ final class HomeSetup {
                 }
                 lastReport = Diagnostics.report(why, health[0], log);
                 p.step("Mengembalikan Home asal…");
+                for (String extra : disabledExtras) {
+                    try {
+                        tv.shell("pm enable --user 0 " + extra);
+                    } catch (Exception ignored) {
+                    }
+                }
                 restore(tv, stock, origHome);
                 return why + " Home asal TV sudah dikembalikan.";
             }

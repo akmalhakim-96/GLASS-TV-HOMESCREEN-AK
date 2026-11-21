@@ -59,4 +59,18 @@ public class HomeSetupTest {
         assertEquals("a/.B:" + svc, HomeSetup.withHomeKeyService("a/.B\n"));
         assertEquals("a/.B:" + svc, HomeSetup.withHomeKeyService("a/.B:" + svc));
     }
+
+    @Test
+    public void extraHomeAppsAreOnlyKnownSafeOnes() {
+        String claimants = "com.gathin.tvhome/.MainActivity\ncom.mitv.tvhome/.Main\n"
+                + "com.duokan.factorytest/.FactoryHome\ncom.google.android.tungsten.setupwraith/.RecoveryActivity\n"
+                + "com.android.tv.settings/.HomeX\n";
+        assertEquals(java.util.List.of("com.duokan.factorytest", "com.google.android.tungsten.setupwraith"),
+                HomeSetup.extraHomeApps(claimants));
+    }
+
+    @Test
+    public void noExtraHomeApps() {
+        assertTrue(HomeSetup.extraHomeApps("com.gathin.tvhome/.MainActivity\n").isEmpty());
+    }
 }
