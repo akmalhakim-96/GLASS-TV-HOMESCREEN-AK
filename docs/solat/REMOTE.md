@@ -11,6 +11,25 @@ Telefon dan Mi TV Stick mesti guna **Wi-Fi yang sama**. Komputer tidak diperluka
 
 **Syarat di Mi TV Stick:** **USB debugging** mesti hidup (Settings → Device Preferences → Developer options). Ia memang sudah hidup jika anda pernah pasang Glass TV.
 
+## Pasang Glass TV di TV tanpa komputer
+
+1. Di Mi TV Stick: **Settings → Device Preferences → About**, tekan OK pada **Build** sebanyak 7 kali.
+   Kemudian buka **Developer options** dan hidupkan **USB debugging**.
+2. Di telefon: buka Glass TV Remote dan tekan **Cari TV** (atau taip IP TV).
+3. Tekan **Pasang & jadikan Home**, kemudian **Pasang**.
+   Di TV, tanda **Always allow** dan tekan **OK** bila ditanya.
+4. Tunggu ±1 minit. Bila keluar **Siap ✓ Glass TV kini Home**:
+   - pilih zon dan MP3 azan dalam bahagian **Solat**;
+   - kemudian tekan **HANTAR KE TV**.
+
+Butang ini sama dengan skrip komputer:
+- Glass TV dipasang dan diuji dahulu, sebelum Home asal disentuh.
+- Home asal **dimatikan, bukan dibuang**.
+- Jika ada yang tidak kena, Home asal dikembalikan dengan sendiri.
+- Butang ini juga memberi kebenaran pulau azan, dan menghidupkan butang Home dan OK pada remote.
+
+Buang iklan (debloat) masih perlu komputer. Ia pilihan sahaja.
+
 ## Kali pertama sambung
 
 1. Buka app dan tekan **Cari TV**. App mencari stick dalam Wi-Fi rumah dengan sendiri.

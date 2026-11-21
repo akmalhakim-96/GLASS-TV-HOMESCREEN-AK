@@ -19,6 +19,8 @@
             <Button android:id="@+id/scan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cari TV" />
             <Button android:id="@+id/connect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sambung" />
         </LinearLayout>
+        <Button android:id="@+id/setupHome" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+            android:text="Pasang &amp; jadikan Home" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
 
         <!-- Gambar latar -->
         <TextView style="@style/Section" android:text="GAMBAR LATAR" />

@@ -1,0 +1,161 @@
+package my.glasstv.remote;
+
+import android.content.Context;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+
+/**
+ * "Pasang & jadikan Home": installs the Glass TV APK bundled in this app and makes it the TV's Home,
+ * the way launcher/install-prebuilt.ps1 does from a computer, with the same safeguard: nothing about
+ * the stock launcher changes until Glass TV is seen running, and any failure after the install puts
+ * the TV back as it was.
+ */
+final class HomeSetup {
+    static final String NONE = "none";
+    private static final String PKG = TvCommands.PKG;
+    private static final String COMPONENT = PKG + "/.MainActivity";
+    private static final String SERVICE = PKG + "/.HomeKeyService";
+    private static final String[] KNOWN_STOCK = {"com.google.android.tvlauncher", "com.google.android.apps.tv.launcherx",
+            "com.google.android.leanbacklauncher", "com.mitv.tvhome"};
+    private static final String RESOLVE_HOME =
+            "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME";
+    private static final String HOME_CLAIMANTS =
+            "cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME";
+    private static final String HEALTH = "sleep 4; a=$(pidof " + PKG + "); sleep 3; b=$(pidof " + PKG + "); "
+            + "f=$(dumpsys window 2>/dev/null | grep -m1 mCurrentFocus); echo \"$a|$b|$f\"";
+
+    /** A reason to stop, already in Malay. */
+    static final class SetupException extends Exception {
+        SetupException(String malay) {
+            super(malay);
+        }
+    }
+
+    private HomeSetup() {}
+
+    // ---- decisions (pure, tested) ----------------------------------------------------------------
+
+    static boolean sdkOk(String sdk) {
+        try {
+            return Integer.parseInt(sdk.trim()) >= 26;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** The stock launcher to disable, NONE when Glass TV is already Home. */
+    static String stockLauncher(String homeResolve, String claimants) throws SetupException {
+        String home = lastLine(homeResolve);
+        String pkg = home.contains("/") ? home.substring(0, home.indexOf('/')) : home;
+        for (String k : KNOWN_STOCK) if (k.equals(pkg)) return k;
+        if (pkg.equals(PKG)) return NONE;
+        if (pkg.equals("android")) {
+            String found = null;
+            for (String k : KNOWN_STOCK) {
+                if (claimants.contains(k + "/")) {
+                    if (found != null) throw new SetupException("TV ada dua Home asal. Pilih satu Home di TV dahulu, kemudian cuba lagi.");
+                    found = k;
+                }
+            }
+            if (found != null) return found;
+        }
+        throw new SetupException("Home TV sekarang ialah " + pkg + ", yang tidak dikenali. Tiada apa yang diubah.");
+    }
+
+    /** "pid|pid|focus": Glass TV is in front and the same process both times (not crashing). */
+    static boolean healthy(String line) {
+        String[] p = lastLine(line).split("\\|", 3);
+        return p.length == 3 && !p[0].trim().isEmpty() && p[0].trim().equals(p[1].trim()) && p[2].contains(PKG + "/");
+    }
+
+    /** The enabled accessibility services with HomeKeyService added, keeping every other one. */
+    static String withHomeKeyService(String current) {
+        String c = current == null ? "" : current.trim();
+        if (c.isEmpty() || c.equals("null")) return SERVICE;
+        for (String s : c.split(":")) if (s.equals(SERVICE)) return c;
+        return c + ":" + SERVICE;
+    }
+
+    private static String lastLine(String s) {
+        String t = s == null ? "" : s.trim();
+        int nl = t.lastIndexOf('\n');
+        return (nl < 0 ? t : t.substring(nl + 1)).trim();
+    }
+
+    // ---- the run ---------------------------------------------------------------------------------
+
+    /** Runs on a background thread; returns the Malay line for the status text. */
+    static String run(Context c, String host, Sender.Progress p) {
+        try (Tv tv = Tv.connect(c, host)) {
+            p.step("Memeriksa TV…");
+            if (!sdkOk(tv.shell("getprop ro.build.version.sdk"))) {
+                return "TV ini guna Android lama (bawah 8). Glass TV tidak boleh jadi Home. Tiada apa yang diubah.";
+            }
+            if (tv.shell("getprop ro.product.manufacturer").trim().equalsIgnoreCase("Amazon")) {
+                return "Ini Fire TV: Fire OS akan ambil semula Home. Tiada apa yang diubah.";
+            }
+            String origHome = lastLine(tv.shell(RESOLVE_HOME));
+            String stock = stockLauncher(origHome, tv.shell(HOME_CLAIMANTS));
+
+            p.step("Memasang Glass TV…");
+            File apk = new File(c.getCacheDir(), "glass-tv.apk");
+            try (InputStream in = c.getAssets().open("glass-tv.apk"); FileOutputStream out = new FileOutputStream(apk)) {
+                byte[] buf = new byte[64 * 1024];
+                int r;
+                while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
+            }
+            tv.push(apk, "/data/local/tmp/tvhome.apk");
+            apk.delete();
+            String installed = tv.shell("pm install -r /data/local/tmp/tvhome.apk; rm -f /data/local/tmp/tvhome.apk");
+            if (!installed.contains("Success")) {
+                return "Pemasangan gagal (" + lastLine(installed) + "). Home asal tidak diubah.";
+            }
+            try {
+                tv.shell("appops set " + PKG + " SYSTEM_ALERT_WINDOW allow");
+                tv.shell("am start -W -n " + COMPONENT);
+                p.step("Memastikan Glass TV berjalan…");
+                if (!healthy(tv.shell(HEALTH))) throw new SetupException("Glass TV tidak berjalan dengan baik pada TV ini.");
+                if (!stock.equals(NONE)) tv.shell("pm disable-user --user 0 " + stock);
+                tv.shell("cmd package set-home-activity --user 0 " + COMPONENT);
+                String now = lastLine(tv.shell(RESOLVE_HOME));
+                if (!now.startsWith(PKG + "/")) throw new SetupException("Home masih ke " + now + ".");
+                tv.shell("input keyevent KEYCODE_HOME");
+                if (!healthy(tv.shell(HEALTH))) throw new SetupException("Butang Home tidak membuka Glass TV.");
+            } catch (Exception e) {
+                p.step("Mengembalikan Home asal…");
+                restore(tv, stock, origHome);
+                String why = e instanceof SetupException ? e.getMessage() : Messages.forError(e);
+                return why + " Home asal TV sudah dikembalikan.";
+            }
+
+            p.step("Menghidupkan butang Home dan OK remote…");
+            tv.shell("settings put secure enabled_accessibility_services "
+                    + withHomeKeyService(tv.shell("settings get secure enabled_accessibility_services")));
+            tv.shell("settings put secure accessibility_enabled 1");
+            if (tv.shell("settings get secure high_text_contrast_enabled").trim().equals("1")) {
+                tv.shell("settings put secure high_text_contrast_enabled 0");
+            }
+            return "Siap ✓ Glass TV kini Home. Sekarang tekan HANTAR KE TV untuk hantar zon solat dan azan.";
+        } catch (SetupException e) {
+            return e.getMessage();
+        } catch (Exception e) {
+            return Messages.forError(e);
+        }
+    }
+
+    /** Puts the TV back: Glass TV out, the stock launcher on and Home where it was. Best effort. */
+    private static void restore(Tv tv, String stock, String origHome) {
+        try {
+            // Glass TV was already Home before (an update): removing it would leave the TV without one.
+            if (!stock.equals(NONE)) tv.shell("pm uninstall " + PKG);
+            if (!stock.equals(NONE)) tv.shell("pm enable --user 0 " + stock);
+            if (origHome.contains("/") && !origHome.startsWith(PKG + "/")) {
+                tv.shell("cmd package set-home-activity --user 0 " + origHome);
+            }
+            tv.shell("input keyevent KEYCODE_HOME");
+        } catch (Exception ignored) {
+        }
+    }
+}

@@ -126,6 +126,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.pickAzan).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN));
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
+        findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupHome());
         send.setOnClickListener(v -> send());
 
         restore(b);
@@ -265,6 +266,50 @@ public class MainActivity extends Activity {
             for (int i = 0; i < da.length(); i++) names.add(TvApps.label(da.optString(i)));
             dockText.setText("Dock sekarang: " + String.join(", ", names));
         }
+    }
+
+    // ---- install and make Home ---------------------------------------------------------------------
+
+    private void confirmSetupHome() {
+        String h = host();
+        if (h.isEmpty()) {
+            status.setText("Tekan Cari TV atau taip IP TV dahulu.");
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Pasang Glass TV di TV?")
+                .setMessage("Glass TV akan dipasang dan dijadikan Home. Home asal TV dimatikan (tidak dibuang). "
+                        + "Jika ada yang tidak kena, Home asal dikembalikan dengan sendiri.\n\n"
+                        + "Jika TV bertanya \"Allow USB debugging?\", tanda Always allow dan tekan OK. "
+                        + "Proses ini ambil masa ±1 minit.")
+                .setPositiveButton("Pasang", (d, w) -> setupHome(h))
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void setupHome(String h) {
+        findViewById(R.id.setupHome).setEnabled(false);
+        status.setText("Bersambung ke " + h + "…");
+        worker.execute(() -> {
+            String line = HomeSetup.run(this, h, step -> runOnUiThread(() -> status.setText(step)));
+            runOnUiThread(() -> {
+                findViewById(R.id.setupHome).setEnabled(true);
+                status.setText(line);
+                if (line.startsWith("Siap")) {
+                    filled = false;   // Glass TV is new on the TV: read its settings again before HANTAR
+                    prefs.edit().putString("ip", h).apply();
+                    connectQuietly(line);
+                }
+            });
+        });
+    }
+
+    /** Reads the TV's settings into the form, keeping the given line in the status. */
+    private void connectQuietly(String keep) {
+        connect();
+        status.postDelayed(() -> {
+            if (filled) status.setText(keep);
+        }, 3000);
     }
 
     // ---- choosing --------------------------------------------------------------------------------
