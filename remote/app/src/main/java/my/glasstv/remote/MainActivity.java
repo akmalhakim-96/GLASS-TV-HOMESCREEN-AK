@@ -58,6 +58,9 @@ public class MainActivity extends Activity {
     private final List<Uri> photos = new ArrayList<>();
     private List<String> dock;   // null: leave the TV's dock alone
     private Uri azan, azanSubuh;
+    /** The form shows the TV's own settings (read on a successful connect); HANTAR waits for it. */
+    private boolean filled;
+    private boolean tvHasPhotos;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -124,6 +127,41 @@ public class MainActivity extends Activity {
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
         send.setOnClickListener(v -> send());
+
+        restore(b);
+        // With a remembered TV, read its settings straight away so the form never starts from guesses.
+        if (!host().isEmpty()) connect();
+    }
+
+    /** Picks survive the phone closing the app while the photo or file picker is open. */
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putParcelableArrayList("photos", new ArrayList<>(photos));
+        out.putParcelable("azan", azan);
+        out.putParcelable("azanSubuh", azanSubuh);
+        if (dock != null) out.putStringArrayList("dock", new ArrayList<>(dock));
+    }
+
+    private void restore(Bundle b) {
+        if (b == null) return;
+        ArrayList<Uri> saved = b.getParcelableArrayList("photos");
+        if (saved != null) for (Uri u : saved) {
+            photos.add(u);
+            addThumb(u);
+        }
+        updatePhotoCount();
+        azan = b.getParcelable("azan");
+        if (azan != null) azanName.setText("Azan: " + name(azan));
+        azanSubuh = b.getParcelable("azanSubuh");
+        if (azanSubuh != null) azanSubuhName.setText("Azan Subuh: " + name(azanSubuh));
+        ArrayList<String> d = b.getStringArrayList("dock");
+        if (d != null) {
+            dock = d;
+            List<String> names = new ArrayList<>();
+            for (String p : d) names.add(TvApps.label(p));
+            dockText.setText("Dock: " + String.join(", ", names));
+        }
     }
 
     private ArrayAdapter<String> adapter(String[] items) {
@@ -174,10 +212,18 @@ public class MainActivity extends Activity {
         worker.execute(() -> {
             try (Tv tv = Tv.connect(this, h)) {
                 JSONObject cfg = ConfigMerge.read(tv.shell(TvCommands.readConfig()));
+                int pictures = 0;
+                try {
+                    pictures = Integer.parseInt(tv.shell(TvCommands.countWallpapers()).trim());
+                } catch (NumberFormatException ignored) {
+                }
+                final int onTv = pictures;
                 prefs.edit().putString("ip", h).apply();
                 runOnUiThread(() -> {
                     status.setText("Bersambung ✓ " + h);
+                    tvHasPhotos = onTv > 0;
                     fill(cfg);
+                    filled = true;
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> status.setText(Messages.forError(e)));
@@ -393,6 +439,12 @@ public class MainActivity extends Activity {
         s.azanDim = dim.getSelectedItemPosition();
         if (on.isEmpty()) {
             result.setText("Pilih sekurang-kurangnya satu waktu azan.");
+            return;
+        }
+        String gate = SendGate.check(filled, own.isChecked(), photos.size(), tvHasPhotos);
+        if (gate != null) {
+            result.setText(gate);
+            if (!filled) connect();
             return;
         }
         List<Uri> sendPhotos = s.places ? new ArrayList<>() : new ArrayList<>(photos);

@@ -25,10 +25,29 @@ final class Tv implements Closeable {
         this.dadb = dadb;
     }
 
+    /** The TV answers on port 5555 but the handshake did not finish: its Allow dialog is waiting. */
+    static final class AuthPending extends IOException {
+        AuthPending(Throwable cause) {
+            super("adb auth pending", cause);
+        }
+    }
+
     static Tv connect(Context c, String host) throws IOException {
+        // A plain TCP probe first, so "not found" and "waiting for Allow" are told apart.
+        try (java.net.Socket probe = new java.net.Socket()) {
+            probe.connect(new java.net.InetSocketAddress(host, PORT), CONNECT_TIMEOUT_MS);
+        }
         Dadb d = Dadb.create(host, PORT, key(c), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS);
         Tv tv = new Tv(d);
-        tv.shell("echo ok");   // connect and authenticate now, not halfway through sending
+        try {
+            tv.shell("echo ok");   // connect and authenticate now, not halfway through sending
+        } catch (IOException | RuntimeException e) {
+            try {
+                d.close();
+            } catch (Exception ignored) {
+            }
+            throw new AuthPending(e);
+        }
         return tv;
     }
 

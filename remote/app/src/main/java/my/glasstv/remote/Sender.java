@@ -33,15 +33,17 @@ final class Sender {
                     File f;
                     try {
                         f = PhotoPrep.prepare(c, photos.get(i), darken, sent);
-                    } catch (Exception e) {
-                        skipped++;   // deleted from the gallery since it was picked, or not a picture
+                    } catch (Exception | OutOfMemoryError e) {
+                        skipped++;   // deleted from the gallery since it was picked, not a picture, or too big
                         continue;
                     }
                     tv.push(f, TvCommands.DIR + "/wallpapers.new/" + f.getName());
                     f.delete();
                     sent++;
                 }
-                if (sent > 0) tv.shell(TvCommands.swapWallpapers());
+                String none = SendGate.afterPhotos(photos.size(), sent);
+                if (none != null) return none;   // keep the TV as it is rather than a blank background
+                tv.shell(TvCommands.swapWallpapers());
             } else if (Boolean.TRUE.equals(s.places)) {
                 tv.shell(TvCommands.clearWallpapers());
             }

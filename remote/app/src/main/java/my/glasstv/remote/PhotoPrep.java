@@ -31,9 +31,9 @@ final class PhotoPrep {
         }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) throw new IOException("not a picture");
         BitmapFactory.Options o = new BitmapFactory.Options();
-        int sample = 1;
-        while (bounds.outWidth / (sample * 2) >= PhotoMath.W && bounds.outHeight / (sample * 2) >= PhotoMath.H) sample *= 2;
-        o.inSampleSize = sample;
+        // Sampled on the upright crop, so sideways-stored portraits keep their detail, and capped so a
+        // panorama cannot run the phone out of memory.
+        o.inSampleSize = PhotoMath.sampleSize(bounds.outWidth, bounds.outHeight, degrees(c, uri));
         Bitmap src;
         try (InputStream in = c.getContentResolver().openInputStream(uri)) {
             src = BitmapFactory.decodeStream(in, null, o);
@@ -64,15 +64,19 @@ final class PhotoPrep {
         return f;
     }
 
-    private static Bitmap upright(Context c, Uri uri, Bitmap b) {
-        int degrees = 0;
+    private static int degrees(Context c, Uri uri) {
         try (InputStream in = c.getContentResolver().openInputStream(uri)) {
             int o = new ExifInterface(in).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            if (o == ExifInterface.ORIENTATION_ROTATE_90) degrees = 90;
-            else if (o == ExifInterface.ORIENTATION_ROTATE_180) degrees = 180;
-            else if (o == ExifInterface.ORIENTATION_ROTATE_270) degrees = 270;
+            if (o == ExifInterface.ORIENTATION_ROTATE_90) return 90;
+            if (o == ExifInterface.ORIENTATION_ROTATE_180) return 180;
+            if (o == ExifInterface.ORIENTATION_ROTATE_270) return 270;
         } catch (Exception ignored) {
         }
+        return 0;
+    }
+
+    private static Bitmap upright(Context c, Uri uri, Bitmap b) {
+        int degrees = degrees(c, uri);
         if (degrees == 0) return b;
         Matrix m = new Matrix();
         m.postRotate(degrees);

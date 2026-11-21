@@ -20,5 +20,8 @@ final class TvCommands {
 
     static String readConfig() { return "cat " + DIR + "/config.json 2>/dev/null"; }
 
+    /** Prints how many pictures the TV already has in wallpapers/. */
+    static String countWallpapers() { return "ls " + DIR + "/wallpapers 2>/dev/null | wc -l"; }
+
     static String makeDir() { return "mkdir -p " + DIR; }
 }

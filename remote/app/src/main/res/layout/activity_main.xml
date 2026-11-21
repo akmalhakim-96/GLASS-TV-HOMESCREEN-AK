@@ -48,8 +48,8 @@
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="App sebaris  " android:textColor="#FFFFFFFF" />
             <Spinner android:id="@+id/columns" android:layout_width="wrap_content" android:layout_height="wrap_content" />
         </LinearLayout>
-        <Switch android:id="@+id/wifi" style="@style/Row" android:text="Butang Wi-Fi di atas" />
-        <Switch android:id="@+id/reduced" style="@style/Row" android:checked="true" android:text="Animasi ringan" />
+        <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="Butang Wi-Fi di atas" />
+        <Switch android:id="@+id/reduced" style="@style/Row" android:text="Animasi ringan" />
 
         <!-- Solat -->
         <TextView style="@style/Section" android:text="SOLAT" />
