@@ -33,6 +33,10 @@ final class HomeSetup {
         }
     }
 
+    /** Filled when the last run was rolled back: what failed, the health line and the TV's error log. */
+    static volatile String lastReport;
+    private static final String CRASH_LOG = "logcat -d -b crash -t 40; logcat -d -t 60 '*:E'";
+
     private HomeSetup() {}
 
     // ---- decisions (pure, tested) ----------------------------------------------------------------
@@ -88,6 +92,8 @@ final class HomeSetup {
 
     /** Runs on a background thread; returns the Malay line for the status text. */
     static String run(Context c, String host, Sender.Progress p) {
+        lastReport = null;
+        String[] health = {""};
         try (Tv tv = Tv.connect(c, host)) {
             p.step("Memeriksa TV…");
             if (!sdkOk(tv.shell("getprop ro.build.version.sdk"))) {
@@ -116,17 +122,26 @@ final class HomeSetup {
                 tv.shell("appops set " + PKG + " SYSTEM_ALERT_WINDOW allow");
                 tv.shell("am start -W -n " + COMPONENT);
                 p.step("Memastikan Glass TV berjalan…");
-                if (!healthy(tv.shell(HEALTH))) throw new SetupException("Glass TV tidak berjalan dengan baik pada TV ini.");
+                health[0] = tv.shell(HEALTH);
+                if (!healthy(health[0])) throw new SetupException("Glass TV tidak berjalan dengan baik pada TV ini.");
                 if (!stock.equals(NONE)) tv.shell("pm disable-user --user 0 " + stock);
                 tv.shell("cmd package set-home-activity --user 0 " + COMPONENT);
                 String now = lastLine(tv.shell(RESOLVE_HOME));
                 if (!now.startsWith(PKG + "/")) throw new SetupException("Home masih ke " + now + ".");
                 tv.shell("input keyevent KEYCODE_HOME");
-                if (!healthy(tv.shell(HEALTH))) throw new SetupException("Butang Home tidak membuka Glass TV.");
+                health[0] = tv.shell(HEALTH);
+                if (!healthy(health[0])) throw new SetupException("Butang Home tidak membuka Glass TV.");
             } catch (Exception e) {
+                String why = e instanceof SetupException ? e.getMessage() : Messages.forError(e);
+                p.step("Mengumpul butiran…");
+                String log = "";
+                try {
+                    log = tv.shell(CRASH_LOG);
+                } catch (Exception ignored) {
+                }
+                lastReport = Diagnostics.report(why, health[0], log);
                 p.step("Mengembalikan Home asal…");
                 restore(tv, stock, origHome);
-                String why = e instanceof SetupException ? e.getMessage() : Messages.forError(e);
                 return why + " Home asal TV sudah dikembalikan.";
             }
 

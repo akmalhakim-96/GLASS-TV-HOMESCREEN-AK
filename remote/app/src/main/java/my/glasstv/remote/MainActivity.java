@@ -295,6 +295,7 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 findViewById(R.id.setupHome).setEnabled(true);
                 status.setText(line);
+                if (HomeSetup.lastReport != null) showReport(HomeSetup.lastReport);
                 if (line.startsWith("Siap")) {
                     filled = false;   // Glass TV is new on the TV: read its settings again before HANTAR
                     prefs.edit().putString("ip", h).apply();
@@ -302,6 +303,20 @@ public class MainActivity extends Activity {
                 }
             });
         });
+    }
+
+    /** Why the install was rolled back, with a copy button so the owner can paste it for help. */
+    private void showReport(String report) {
+        new AlertDialog.Builder(this)
+                .setTitle("Pemasangan dibatalkan")
+                .setMessage(report)
+                .setPositiveButton("Salin butiran", (d, w) -> {
+                    android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
+                    if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Glass TV", report));
+                    Toast.makeText(this, "Disalin. Tampal dalam chat.", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Tutup", null)
+                .show();
     }
 
     /** Reads the TV's settings into the form, keeping the given line in the status. */
