@@ -129,6 +129,9 @@ public class MainActivity extends Activity {
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
         findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupHome());
+        findViewById(R.id.testAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_TEST,
+                "Azan diuji di TV. Tekan OK pada remote untuk kembali.", false));
+        findViewById(R.id.checkAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_REPORT, "Semakan azan", true));
         send.setOnClickListener(v -> send());
 
         Spinner tvType = findViewById(R.id.tvType);
@@ -199,6 +202,29 @@ public class MainActivity extends Activity {
 
     private String host() {
         return ip.getText().toString().trim();
+    }
+
+    // ---- azan test and check -----------------------------------------------------------------------
+
+    /** Runs one command on the TV; with showOutput, the answer opens in the copyable report dialog. */
+    private void runOnTv(String cmd, String title, boolean showOutput) {
+        String h = host();
+        if (h.isEmpty()) {
+            status.setText("Sambung ke TV dahulu.");
+            return;
+        }
+        status.setText("Bersambung ke " + h + "…");
+        worker.execute(() -> {
+            try (Tv tv = Tv.connect(this, h)) {
+                String out = tv.shell(cmd);
+                runOnUiThread(() -> {
+                    status.setText(showOutput ? "Bersambung ✓ " + h : title);
+                    if (showOutput) showReport(title, out.trim().isEmpty() ? "(tiada jawapan)" : out.trim());
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> status.setText(Messages.forError(e)));
+            }
+        });
     }
 
     // ---- TV type ---------------------------------------------------------------------------------
@@ -355,8 +381,12 @@ public class MainActivity extends Activity {
 
     /** Why the install was rolled back, with a copy button so the owner can paste it for help. */
     private void showReport(String report) {
+        showReport("Pemasangan dibatalkan", report);
+    }
+
+    private void showReport(String title, String report) {
         new AlertDialog.Builder(this)
-                .setTitle("Pemasangan dibatalkan")
+                .setTitle(title)
                 .setMessage(report)
                 .setPositiveButton("Salin butiran", (d, w) -> {
                     android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);

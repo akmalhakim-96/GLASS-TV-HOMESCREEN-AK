@@ -7,6 +7,20 @@ final class TvCommands {
     static final String LIST_APPS =
             "cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER";
 
+    /** Plays the azan now, with the next prayer's name (Glass TV's AzanReceiver test action). */
+    static final String AZAN_TEST = "am broadcast -n " + PKG + "/.AzanReceiver -a " + PKG + ".AZAN_TEST";
+
+    /** What the owner copies when an azan did not show: version, the alarm, permissions and the azan log. */
+    static final String AZAN_REPORT = "echo '== masa'; date; "
+            + "echo '== versi'; dumpsys package " + PKG + " | grep -m2 -E 'lastUpdateTime|firstInstallTime'; "
+            + "echo -n 'skrin azan baharu: '; dumpsys package " + PKG + " | grep -c AzanActivity; "
+            + "echo '== keadaan'; dumpsys package " + PKG + " | grep -m1 -o 'stopped=[a-z]*'; "
+            + "appops get " + PKG + " SYSTEM_ALERT_WINDOW; "
+            + "settings get secure enabled_accessibility_services; "
+            + "echo '== alarm'; dumpsys alarm | grep -A3 'com.gathin.tvhome' | head -20; "
+            + "echo '== log'; logcat -d -v time -s TvHome.Azan:* TvHome.Prayer:* | tail -30; "
+            + "logcat -d -v time | grep -i -E 'gathin.tvhome.*(kill|died|crash|force)|AzanActivity|AzanService' | tail -15";
+
     private TvCommands() {}
 
     static String prepareWallpapers() { return "rm -rf " + DIR + "/wallpapers.new; mkdir -p " + DIR + "/wallpapers.new"; }

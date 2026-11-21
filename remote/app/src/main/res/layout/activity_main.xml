@@ -78,6 +78,11 @@
             <Spinner android:id="@+id/dim" android:layout_width="wrap_content" android:layout_height="wrap_content" />
         </LinearLayout>
 
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp">
+            <Button android:id="@+id/testAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Uji azan sekarang" />
+            <Button android:id="@+id/checkAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Semak azan" />
+        </LinearLayout>
+
         <!-- Bismillah -->
         <TextView style="@style/Section" android:text="BISMILLAH" />
         <Switch android:id="@+id/bismillah" style="@style/Row" android:checked="true" android:text="Bismillah bila TV dihidupkan" />
