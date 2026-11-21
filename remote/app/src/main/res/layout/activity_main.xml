@@ -12,6 +12,11 @@
 
         <!-- Sambungan -->
         <TextView style="@style/Section" android:text="SAMBUNGAN" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Jenis TV  " android:textColor="#FFFFFFFF" />
+            <Spinner android:id="@+id/tvType" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </LinearLayout>
+        <TextView android:id="@+id/tvTypeNote" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" />
         <TextView android:id="@+id/status" style="@style/Row" android:text="Belum bersambung" android:textColor="#B3FFFFFF" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
             <EditText android:id="@+id/ip" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"

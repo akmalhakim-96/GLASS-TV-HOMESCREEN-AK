@@ -131,9 +131,30 @@ public class MainActivity extends Activity {
         findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupHome());
         send.setOnClickListener(v -> send());
 
+        Spinner tvType = findViewById(R.id.tvType);
+        String[] typeLabels = new String[TvTypes.ALL.length];
+        int chosenType = 0;
+        for (int i = 0; i < TvTypes.ALL.length; i++) {
+            typeLabels[i] = TvTypes.ALL[i].label;
+            if (TvTypes.ALL[i].key.equals(prefs.getString("tvType", "mi"))) chosenType = i;
+        }
+        tvType.setAdapter(adapter(typeLabels));
+        tvType.setSelection(chosenType);
+        tvType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int pos, long id) {
+                applyTvType(TvTypes.ALL[pos]);
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
+        applyTvType(TvTypes.ALL[chosenType]);
+
         restore(b);
         // With a remembered TV, read its settings straight away so the form never starts from guesses.
-        if (!host().isEmpty()) connect();
+        if (!host().isEmpty() && TvTypes.ALL[chosenType].supported) connect();
     }
 
     /** Picks survive the phone closing the app while the photo or file picker is open. */
@@ -180,6 +201,23 @@ public class MainActivity extends Activity {
         return ip.getText().toString().trim();
     }
 
+    // ---- TV type ---------------------------------------------------------------------------------
+
+    /** Samsung and LG cannot run Glass TV: say why and what works instead, and turn the buttons off. */
+    private void applyTvType(TvTypes.Type t) {
+        prefs.edit().putString("tvType", t.key).apply();
+        ((TextView) findViewById(R.id.tvTypeNote)).setText(t.note);
+        for (int id : new int[]{R.id.scan, R.id.connect, R.id.setupHome, R.id.send}) findViewById(id).setEnabled(t.supported);
+        if (!t.supported) status.setText("Glass TV tidak boleh dipasang pada " + t.label + ".");
+    }
+
+    private void showDetected(TvTypes.Type t, String release) {
+        Spinner tvType = findViewById(R.id.tvType);
+        for (int i = 0; i < TvTypes.ALL.length; i++) if (TvTypes.ALL[i] == t) tvType.setSelection(i);
+        // After the spinner's own listener (posted), which would otherwise put the generic note back.
+        tvType.post(() -> ((TextView) findViewById(R.id.tvTypeNote)).setText("Dikesan: " + t.label + " · Android " + release.trim()));
+    }
+
     // ---- connection ------------------------------------------------------------------------------
 
     private void scan() {
@@ -224,8 +262,13 @@ public class MainActivity extends Activity {
                 } catch (NumberFormatException ignored) {
                 }
                 final int onTv = pictures;
+                TvTypes.Type detected = TvTypes.detect(tv.shell("getprop ro.product.manufacturer"),
+                        tv.shell("getprop ro.product.model"),
+                        tv.shell("cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME"));
+                String release = tv.shell("getprop ro.build.version.release");
                 prefs.edit().putString("ip", h).apply();
                 runOnUiThread(() -> {
+                    showDetected(detected, release);
                     status.setText("Bersambung ✓ " + h);
                     tvHasPhotos = onTv > 0;
                     fill(cfg);

@@ -11,6 +11,15 @@ Telefon dan Mi TV Stick mesti guna **Wi-Fi yang sama**. Komputer tidak diperluka
 
 **Syarat di Mi TV Stick:** **USB debugging** mesti hidup (Settings → Device Preferences → Developer options). Ia memang sudah hidup jika anda pernah pasang Glass TV.
 
+## Jenis TV
+
+Pilih jenis TV di bahagian atas app. Selepas bersambung, app mengesan jenis TV sendiri.
+
+| Jenis | Glass TV |
+|---|---|
+| Android TV, Google TV, Skyworth, Mi TV Stick / Mi Box | ✅ Boleh |
+| Samsung (Tizen), LG (webOS) | ❌ Tidak boleh: TV ini tidak menjalankan app Android dan Home-nya tidak boleh ditukar. Pasang stick Google TV atau Mi TV Stick di HDMI, hidupkan HDMI-CEC, kemudian pilih jenis stick itu. |
+
 ## Pasang Glass TV di TV tanpa komputer
 
 1. Di Mi TV Stick: **Settings → Device Preferences → About**, tekan OK pada **Build** sebanyak 7 kali.
