@@ -23,7 +23,12 @@ import java.io.InputStream;
 final class PhotoPrep {
     private PhotoPrep() {}
 
-    static File prepare(Context c, Uri uri, boolean darken, int index) throws IOException {
+    /**
+     * @param fit  true: the whole picture, nothing cut, over a blurred and darkened copy of itself;
+     *             false: centre-cropped to fill the screen
+     * @param name file name in the cache, e.g. "01.jpg"
+     */
+    static File prepare(Context c, Uri uri, boolean darken, boolean fit, String name) throws IOException {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
         try (InputStream in = c.getContentResolver().openInputStream(uri)) {
@@ -42,10 +47,24 @@ final class PhotoPrep {
         src = upright(c, uri, src);
 
         int[] r = PhotoMath.cropRect(src.getWidth(), src.getHeight());
+        Rect crop = new Rect(r[0], r[1], r[0] + r[2], r[1] + r[3]);
+        Rect screen = new Rect(0, 0, PhotoMath.W, PhotoMath.H);
         Bitmap out = Bitmap.createBitmap(PhotoMath.W, PhotoMath.H, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(out);
-        canvas.drawBitmap(src, new Rect(r[0], r[1], r[0] + r[2], r[1] + r[3]), new Rect(0, 0, PhotoMath.W, PhotoMath.H),
-                new Paint(Paint.FILTER_BITMAP_FLAG));
+        Paint smooth = new Paint(Paint.FILTER_BITMAP_FLAG);
+        if (fit) {
+            // Behind: the same picture, cropped to fill, shrunk to a few dozen pixels and stretched back
+            // up, which blurs it; darkened so the whole picture in front stands out.
+            Bitmap tiny = Bitmap.createBitmap(48, 27, Bitmap.Config.ARGB_8888);
+            new Canvas(tiny).drawBitmap(src, crop, new Rect(0, 0, 48, 27), smooth);
+            canvas.drawBitmap(tiny, null, screen, smooth);
+            tiny.recycle();
+            canvas.drawColor(0x80000000);
+            int[] f = PhotoMath.fitRect(src.getWidth(), src.getHeight());
+            canvas.drawBitmap(src, null, new Rect(f[0], f[1], f[0] + f[2], f[1] + f[3]), smooth);
+        } else {
+            canvas.drawBitmap(src, crop, screen, smooth);
+        }
         src.recycle();
         if (darken) canvas.drawColor(0x40000000);
 
@@ -57,7 +76,7 @@ final class PhotoPrep {
             if (jpeg.length <= PhotoMath.MAX_JPEG) break;
         }
         out.recycle();
-        File f = new File(c.getCacheDir(), PhotoMath.fileName(index));
+        File f = new File(c.getCacheDir(), name);
         try (FileOutputStream fo = new FileOutputStream(f)) {
             fo.write(jpeg);
         }

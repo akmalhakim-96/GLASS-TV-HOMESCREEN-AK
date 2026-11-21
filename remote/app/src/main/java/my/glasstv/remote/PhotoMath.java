@@ -38,6 +38,16 @@ final class PhotoMath {
         return s;
     }
 
+    /** Where the whole w×h picture sits inside 1920×1080 without cutting: {left, top, width, height}. */
+    static int[] fitRect(int w, int h) {
+        if ((long) w * H > (long) h * W) {
+            int fh = (int) ((long) h * W / w);
+            return new int[]{0, (H - fh) / 2, W, fh};
+        }
+        int fw = (int) ((long) w * H / h);
+        return new int[]{(W - fw) / 2, 0, fw, H};
+    }
+
     /** 0 → "01.jpg": the launcher rotates through wallpapers in file-name order. */
     static String fileName(int index) {
         return String.format(Locale.ROOT, "%02d.jpg", index + 1);

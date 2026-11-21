@@ -77,4 +77,21 @@ public class HelpersTest {
         assertTrue(Messages.forError(new java.net.SocketTimeoutException("t")).startsWith("TV tidak dijumpai"));
         assertTrue(Messages.forError(new RuntimeException("boom")).startsWith("Gagal: "));
     }
+
+    @Test
+    public void portraitFitsInsideWithoutCutting() {
+        // 3000×4000 upright: full height 1080, width 810, centred.
+        assertArrayEquals(new int[]{555, 0, 810, 1080}, PhotoMath.fitRect(3000, 4000));
+    }
+
+    @Test
+    public void wideFitsInsideWithoutCutting() {
+        // 4000×1000: full width 1920, height 480, centred.
+        assertArrayEquals(new int[]{0, 300, 1920, 480}, PhotoMath.fitRect(4000, 1000));
+    }
+
+    @Test
+    public void azanWallpaperPath() {
+        assertEquals(TvCommands.DIR + "/azan_wallpaper.jpg", TvCommands.azanWallpaperPath());
+    }
 }

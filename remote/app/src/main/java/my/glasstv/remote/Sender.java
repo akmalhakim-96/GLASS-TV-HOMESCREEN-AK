@@ -18,8 +18,8 @@ final class Sender {
     private Sender() {}
 
     /** Runs on a background thread; returns the line shown under the button. */
-    static String send(Context c, String host, Settings s, List<Uri> photos, boolean darken,
-                       Uri azan, Uri azanSubuh, Progress p) {
+    static String send(Context c, String host, Settings s, List<Uri> photos, boolean darken, boolean fit,
+                       Uri azanWallpaper, Uri azan, Uri azanSubuh, Progress p) {
         try (Tv tv = Tv.connect(c, host)) {
             p.step("Bersambung ke TV…");
             tv.shell(TvCommands.makeDir());
@@ -32,7 +32,7 @@ final class Sender {
                     p.step("Menyediakan gambar " + (i + 1) + " daripada " + photos.size() + "…");
                     File f;
                     try {
-                        f = PhotoPrep.prepare(c, photos.get(i), darken, sent);
+                        f = PhotoPrep.prepare(c, photos.get(i), darken, fit, PhotoMath.fileName(sent));
                     } catch (Exception | OutOfMemoryError e) {
                         skipped++;   // deleted from the gallery since it was picked, not a picture, or too big
                         continue;
@@ -48,6 +48,12 @@ final class Sender {
                 tv.shell(TvCommands.clearWallpapers());
             }
 
+            if (azanWallpaper != null) {
+                p.step("Menyediakan gambar latar azan…");
+                File w = PhotoPrep.prepare(c, azanWallpaper, false, true, "azan_wallpaper.jpg");
+                tv.push(w, TvCommands.azanWallpaperPath());
+                w.delete();
+            }
             if (azan != null) pushAudio(c, tv, azan, "azan.mp3", p);
             if (azanSubuh != null) pushAudio(c, tv, azanSubuh, "azan_subuh.mp3", p);
 

@@ -35,7 +35,7 @@ import org.json.JSONObject;
 
 /** The one screen: connection, wallpapers, Home, prayer times, Bismillah, and HANTAR KE TV. */
 public class MainActivity extends Activity {
-    private static final int PICK_PHOTOS = 1, PICK_AZAN = 2, PICK_AZAN_SUBUH = 3;
+    private static final int PICK_PHOTOS = 1, PICK_AZAN = 2, PICK_AZAN_SUBUH = 3, PICK_AZAN_WALLPAPER = 4;
     private static final int[] INTERVAL_S = {5, 15, 30, 60, 300, 1800, 3600, 86400};
     private static final String[] INTERVAL_LABEL = {"5 saat", "15 saat", "30 saat", "1 minit", "5 minit", "30 minit", "1 jam", "1 hari"};
     private static final String[] PRAYER_KEY = {"subuh", "zohor", "asar", "maghrib", "isyak"};
@@ -49,7 +49,7 @@ public class MainActivity extends Activity {
     private TextView status, result, photoCount, dockText, azanName, azanSubuhName;
     private EditText ip, azanText, azanSubtext;
     private RadioButton places, own;
-    private Switch darken, wifi, reduced, bismillah;
+    private Switch darken, fit, wifi, reduced, bismillah;
     private Spinner interval, columns, zone, dim;
     private LinearLayout thumbs, ownBox;
     private final CheckBox[] prayers = new CheckBox[5];
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
 
     private final List<Uri> photos = new ArrayList<>();
     private List<String> dock;   // null: leave the TV's dock alone
-    private Uri azan, azanSubuh;
+    private Uri azan, azanSubuh, azanWallpaper;
     /** The form shows the TV's own settings (read on a successful connect); HANTAR waits for it. */
     private boolean filled;
     private boolean tvHasPhotos;
@@ -79,6 +79,7 @@ public class MainActivity extends Activity {
         places = findViewById(R.id.places);
         own = findViewById(R.id.own);
         darken = findViewById(R.id.darken);
+        fit = findViewById(R.id.fit);
         wifi = findViewById(R.id.wifi);
         reduced = findViewById(R.id.reduced);
         bismillah = findViewById(R.id.bismillah);
@@ -123,6 +124,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.scan).setOnClickListener(v -> scan());
         findViewById(R.id.connect).setOnClickListener(v -> connect());
         findViewById(R.id.pickPhotos).setOnClickListener(v -> pick("image/*", true, PICK_PHOTOS));
+        findViewById(R.id.pickAzanWallpaper).setOnClickListener(v -> pick("image/*", false, PICK_AZAN_WALLPAPER));
         findViewById(R.id.pickAzan).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN));
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
@@ -141,6 +143,7 @@ public class MainActivity extends Activity {
         out.putParcelableArrayList("photos", new ArrayList<>(photos));
         out.putParcelable("azan", azan);
         out.putParcelable("azanSubuh", azanSubuh);
+        out.putParcelable("azanWallpaper", azanWallpaper);
         if (dock != null) out.putStringArrayList("dock", new ArrayList<>(dock));
     }
 
@@ -154,6 +157,8 @@ public class MainActivity extends Activity {
         updatePhotoCount();
         azan = b.getParcelable("azan");
         if (azan != null) azanName.setText("Azan: " + name(azan));
+        azanWallpaper = b.getParcelable("azanWallpaper");
+        if (azanWallpaper != null) ((TextView) findViewById(R.id.azanWallpaperName)).setText("Gambar latar azan: " + name(azanWallpaper));
         azanSubuh = b.getParcelable("azanSubuh");
         if (azanSubuh != null) azanSubuhName.setText("Azan Subuh: " + name(azanSubuh));
         ArrayList<String> d = b.getStringArrayList("dock");
@@ -355,6 +360,9 @@ public class MainActivity extends Activity {
                 addThumb(u);
             }
             updatePhotoCount();
+        } else if (request == PICK_AZAN_WALLPAPER) {
+            azanWallpaper = data.getData();
+            ((TextView) findViewById(R.id.azanWallpaperName)).setText("Gambar latar azan: " + name(azanWallpaper));
         } else if (request == PICK_AZAN) {
             azan = data.getData();
             azanName.setText("Azan: " + name(azan));
@@ -509,11 +517,12 @@ public class MainActivity extends Activity {
         }
         List<Uri> sendPhotos = s.places ? new ArrayList<>() : new ArrayList<>(photos);
         boolean dark = darken.isChecked();
-        Uri a = azan, as = azanSubuh;
+        boolean whole = fit.isChecked();
+        Uri a = azan, as = azanSubuh, aw = azanWallpaper;
         send.setEnabled(false);
         result.setText("Menghantar…");
         worker.execute(() -> {
-            String line = Sender.send(this, h, s, sendPhotos, dark, a, as,
+            String line = Sender.send(this, h, s, sendPhotos, dark, whole, aw, a, as,
                     step -> runOnUiThread(() -> result.setText(step)));
             runOnUiThread(() -> {
                 result.setText(line);

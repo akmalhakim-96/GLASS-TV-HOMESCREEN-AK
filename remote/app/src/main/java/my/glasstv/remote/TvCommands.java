@@ -23,5 +23,8 @@ final class TvCommands {
     /** Prints how many pictures the TV already has in wallpapers/. */
     static String countWallpapers() { return "ls " + DIR + "/wallpapers 2>/dev/null | wc -l"; }
 
+    /** The picture behind the azan screen (Glass TV's AzanActivity). */
+    static String azanWallpaperPath() { return DIR + "/azan_wallpaper.jpg"; }
+
     static String makeDir() { return "mkdir -p " + DIR; }
 }
