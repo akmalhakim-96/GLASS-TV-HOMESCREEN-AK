@@ -73,4 +73,17 @@ public class HomeSetupTest {
     public void noExtraHomeApps() {
         assertTrue(HomeSetup.extraHomeApps("com.gathin.tvhome/.MainActivity\n").isEmpty());
     }
+
+    @Test
+    public void resumedActivityCountsWhenFocusIsNull() {
+        assertTrue(HomeSetup.healthy("18077|18077|  mCurrentFocus=null "
+                + "mResumedActivity: ActivityRecord{1 u0 com.gathin.tvhome/.MainActivity t12}"));
+        assertFalse(HomeSetup.healthy("18077|18077|  mCurrentFocus=null mResumedActivity: ActivityRecord{1 u0 com.mitv.tvhome/.Main t3}"));
+    }
+
+    @Test
+    public void healthCheckLooksAtTheResumedActivityAndRetries() {
+        assertTrue(HomeSetup.HEALTH.contains("mResumedActivity"));
+        assertTrue(HomeSetup.HEALTH.contains("for i in 1 2 3 4 5"));
+    }
 }

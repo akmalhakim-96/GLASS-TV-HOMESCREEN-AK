@@ -29,8 +29,16 @@ final class HomeSetup {
             "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME";
     private static final String HOME_CLAIMANTS =
             "cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME";
-    private static final String HEALTH = "sleep 4; a=$(pidof " + PKG + "); sleep 3; b=$(pidof " + PKG + "); "
-            + "f=$(dumpsys window 2>/dev/null | grep -m1 mCurrentFocus); echo \"$a|$b|$f\"";
+    /**
+     * "pid|pid|where": the same Glass TV process seconds apart (not crash-looping), then where the TV
+     * is: the focused window, or the resumed activity when no window holds focus for a moment (seen
+     * on the Mi TV Stick right after a start). Tries up to five times, a second apart.
+     */
+    static final String HEALTH = "sleep 4; a=$(pidof " + PKG + "); w=''; for i in 1 2 3 4 5; do "
+            + "w=\"$(dumpsys window 2>/dev/null | grep -m1 mCurrentFocus) "
+            + "$(dumpsys activity activities 2>/dev/null | grep -m1 mResumedActivity)\"; "
+            + "case \"$w\" in *" + PKG + "/*) break;; esac; sleep 1; done; "
+            + "b=$(pidof " + PKG + "); echo \"$a|$b|$w\"";
 
     /** A reason to stop, already in Malay. */
     static final class SetupException extends Exception {
