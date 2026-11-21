@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A gold TV in a dark circle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#14120F" android:pathData="M54,4a50,50 0 1,0 0.01,0z" />
+    <path android:fillColor="#00000000" android:strokeColor="#E3C78C" android:strokeWidth="5"
+        android:pathData="M28,36h52a6,6 0 0 1 6,6v26a6,6 0 0 1 -6,6h-52a6,6 0 0 1 -6,-6v-26a6,6 0 0 1 6,-6z" />
+    <path android:fillColor="#E3C78C" android:pathData="M42,80h24v5h-24z" />
+</vector>
