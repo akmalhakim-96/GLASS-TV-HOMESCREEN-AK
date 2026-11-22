@@ -17,7 +17,7 @@ final class Tv implements Closeable {
     static final int PORT = 5555;
     /** Long enough for someone to walk to the TV and press OK on the first connection. */
     private static final int SOCKET_TIMEOUT_MS = 60_000;
-    private static final int CONNECT_TIMEOUT_MS = 15_000;
+    private static final int CONNECT_TIMEOUT_MS = 3_000;   // home Wi-Fi: an answer comes fast or not at all
 
     private final Dadb dadb;
     /** Null until asked: whether this TV refuses writes into Glass TV's folder (then the inbox is used). */

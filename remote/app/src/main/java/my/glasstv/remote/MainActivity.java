@@ -47,7 +47,12 @@ public class MainActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private SharedPreferences prefs;
     private TextView status, result, photoCount, dockText, azanName, azanSubuhName;
-    private EditText ip, azanText, azanSubtext;
+    private EditText azanText, azanSubtext;
+    /** The owner's TVs; the main one fills the form and answers Uji/Semak azan. */
+    private TvList tvs;
+    private String mainIp = "";
+    private final java.util.Map<String, String> tvStatus = new java.util.HashMap<>();
+    private LinearLayout tvRows;
     private RadioButton places, own;
     private Switch darken, fit, wifi, reduced, bismillah;
     private Spinner interval, columns, zone, dim;
@@ -77,7 +82,6 @@ public class MainActivity extends Activity {
         dockText = findViewById(R.id.dock);
         azanName = findViewById(R.id.azanName);
         azanSubuhName = findViewById(R.id.azanSubuhName);
-        ip = findViewById(R.id.ip);
         azanText = findViewById(R.id.azanText);
         azanSubtext = findViewById(R.id.azanSubtext);
         places = findViewById(R.id.places);
@@ -95,7 +99,11 @@ public class MainActivity extends Activity {
         ownBox = findViewById(R.id.ownBox);
         send = findViewById(R.id.send);
 
-        ip.setText(prefs.getString("ip", ""));
+        tvRows = findViewById(R.id.tvRows);
+        tvs = TvList.fromJson(prefs.getString("tvs", null));
+        mainIp = prefs.getString("ip", "");
+        if (!mainIp.isEmpty() && tvs.find(mainIp) == null) tvs.addFound(java.util.Collections.singletonList(mainIp));
+        saveTvs();
         azanText.setText(DEFAULT_TEXT);
         azanSubtext.setText(DEFAULT_SUBTEXT);
         interval.setAdapter(adapter(INTERVAL_LABEL));
@@ -126,13 +134,19 @@ public class MainActivity extends Activity {
                 (g, id) -> ownBox.setVisibility(id == R.id.own ? View.VISIBLE : View.GONE));
 
         findViewById(R.id.scan).setOnClickListener(v -> scan());
-        findViewById(R.id.connect).setOnClickListener(v -> connect());
+        findViewById(R.id.addIp).setOnClickListener(v -> addIpDialog());
+        findViewById(R.id.selectAll).setOnClickListener(v -> {
+            boolean all = tvs.selectedIps().size() < tvs.all().size();
+            tvs.selectAll(all);
+            saveTvs();
+        });
+        findViewById(R.id.checkAll).setOnClickListener(v -> checkAll());
         findViewById(R.id.pickPhotos).setOnClickListener(v -> pick("image/*", true, PICK_PHOTOS));
         findViewById(R.id.pickAzanWallpaper).setOnClickListener(v -> pick("image/*", false, PICK_AZAN_WALLPAPER));
         findViewById(R.id.pickAzan).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN));
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
-        findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupHome());
+        findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupSelected());
         findViewById(R.id.testAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_TEST,
                 "Azan diuji di TV. Tekan OK pada remote untuk kembali.", false));
         findViewById(R.id.checkAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_REPORT, "Semakan azan", true));
@@ -208,8 +222,137 @@ public class MainActivity extends Activity {
         return a;
     }
 
+    /** The main TV: the one the form is read from, and where Uji/Semak azan go. */
     private String host() {
-        return ip.getText().toString().trim();
+        return mainIp == null ? "" : mainIp;
+    }
+
+    // ---- the TV list -------------------------------------------------------------------------------
+
+    private void saveTvs() {
+        prefs.edit().putString("tvs", tvs.toJson()).putString("ip", host()).apply();
+        renderTvs();
+    }
+
+    /** One row per TV: tick, name, address and its last known state; the main TV is highlighted. */
+    private void renderTvs() {
+        tvRows.removeAllViews();
+        float dp = getResources().getDisplayMetrics().density;
+        for (TvList.Entry e : tvs.all()) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setBackgroundResource(R.drawable.row_bg);
+            row.setActivated(e.ip.equals(host()));
+            int pad = Math.round(8 * dp);
+            row.setPadding(pad / 2, pad, pad, pad);
+            CheckBox tick = new CheckBox(this);
+            tick.setChecked(e.selected);
+            tick.setOnCheckedChangeListener((b, on) -> {
+                tvs.setSelected(e.ip, on);
+                prefs.edit().putString("tvs", tvs.toJson()).apply();
+            });
+            row.addView(tick);
+            LinearLayout words = new LinearLayout(this);
+            words.setOrientation(LinearLayout.VERTICAL);
+            TextView name = new TextView(this);
+            name.setText(e.name + (e.ip.equals(host()) ? "  · utama" : ""));
+            name.setTextColor(0xFFFFFFFF);
+            name.setTextSize(15);
+            name.setTypeface(name.getTypeface(), android.graphics.Typeface.BOLD);
+            words.addView(name);
+            TextView sub = new TextView(this);
+            String st = tvStatus.get(e.ip);
+            sub.setText(e.ip + (st == null ? "" : "   " + st));
+            sub.setTextColor(0xA6FFFFFF);
+            sub.setTextSize(12.5f);
+            words.addView(sub);
+            row.addView(words, new LinearLayout.LayoutParams(0, -2, 1f));
+            row.setOnClickListener(v -> {
+                mainIp = e.ip;
+                filled = false;
+                saveTvs();
+                connect();
+            });
+            row.setOnLongClickListener(v -> {
+                tvMenu(e);
+                return true;
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+            lp.bottomMargin = Math.round(6 * dp);
+            tvRows.addView(row, lp);
+        }
+        findViewById(R.id.tvEmpty).setVisibility(tvs.all().isEmpty() ? View.VISIBLE : View.GONE);
+        ((Button) findViewById(R.id.selectAll)).setText(
+                tvs.selectedIps().size() < tvs.all().size() ? "Pilih semua" : "Nyahpilih semua");
+    }
+
+    private void tvMenu(TvList.Entry e) {
+        new AlertDialog.Builder(this).setTitle(e.name + " (" + e.ip + ")")
+                .setItems(new String[]{"Tukar nama", "Jadikan TV utama", "Buang dari senarai"}, (d, w) -> {
+                    if (w == 0) {
+                        EditText in = new EditText(this);
+                        in.setText(e.name);
+                        in.setSelection(e.name.length());
+                        new AlertDialog.Builder(this).setTitle("Nama TV").setView(in)
+                                .setPositiveButton("Simpan", (x, y) -> {
+                                    tvs.rename(e.ip, in.getText().toString());
+                                    saveTvs();
+                                }).setNegativeButton("Batal", null).show();
+                    } else if (w == 1) {
+                        mainIp = e.ip;
+                        filled = false;
+                        saveTvs();
+                        connect();
+                    } else {
+                        tvs.remove(e.ip);
+                        if (e.ip.equals(mainIp)) mainIp = tvs.all().isEmpty() ? "" : tvs.all().get(0).ip;
+                        saveTvs();
+                    }
+                }).show();
+    }
+
+    private void addIpDialog() {
+        EditText in = new EditText(this);
+        in.setHint("contoh 192.168.0.12");
+        in.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+        new AlertDialog.Builder(this).setTitle("Tambah TV").setView(in)
+                .setPositiveButton("Tambah", (d, w) -> {
+                    String ipText = in.getText().toString().trim();
+                    if (ipText.isEmpty()) return;
+                    tvs.addFound(java.util.Collections.singletonList(ipText));
+                    if (host().isEmpty()) mainIp = ipText;
+                    saveTvs();
+                }).setNegativeButton("Batal", null).show();
+    }
+
+    /** Each TV's state, one after another; the first time, each TV asks "Allow USB debugging?". */
+    private void checkAll() {
+        List<TvList.Entry> all = new ArrayList<>(tvs.all());
+        if (all.isEmpty()) {
+            status.setText("Belum ada TV. Tekan Cari semua TV.");
+            return;
+        }
+        status.setText("Menyemak " + all.size() + " TV… Jika TV bertanya, tanda Always allow dan tekan OK.");
+        worker.execute(() -> {
+            int i = 0;
+            for (TvList.Entry e : all) {
+                final int n = ++i;
+                runOnUiThread(() -> status.setText("Menyemak " + n + "/" + all.size() + ": " + e.name + "…"));
+                String label;
+                try (Tv tv = Tv.connect(this, e.ip)) {
+                    label = TvStatus.label(TvStatus.of(TvVersion.parse(tv.shell(TvVersion.QUERY)), TvVersion.BUNDLED));
+                } catch (Exception ex) {
+                    label = TvStatus.label(Messages.ALLOW.equals(Messages.forError(ex)) ? TvStatus.notAllowed() : TvStatus.unreachable());
+                }
+                final String l = label;
+                runOnUiThread(() -> {
+                    tvStatus.put(e.ip, l);
+                    renderTvs();
+                });
+            }
+            runOnUiThread(() -> status.setText("Semakan selesai."));
+        });
     }
 
     // ---- azan test and check -----------------------------------------------------------------------
@@ -241,7 +384,7 @@ public class MainActivity extends Activity {
     private void applyTvType(TvTypes.Type t) {
         prefs.edit().putString("tvType", t.key).apply();
         ((TextView) findViewById(R.id.tvTypeNote)).setText(t.note);
-        for (int id : new int[]{R.id.scan, R.id.connect, R.id.setupHome, R.id.send, R.id.sendWallpaper, R.id.sendHome,
+        for (int id : new int[]{R.id.scan, R.id.addIp, R.id.checkAll, R.id.setupHome, R.id.send, R.id.sendWallpaper, R.id.sendHome,
                 R.id.sendPrayer, R.id.sendBismillah, R.id.testAzan, R.id.checkAzan}) findViewById(id).setEnabled(t.supported);
         if (!t.supported) status.setText("Glass TV tidak boleh dipasang pada " + t.label + ".");
     }
@@ -255,6 +398,7 @@ public class MainActivity extends Activity {
 
     // ---- connection ------------------------------------------------------------------------------
 
+    /** Every TV answering on the Wi-Fi joins the list (ticked); the first becomes the main TV. */
     private void scan() {
         status.setText("Mencari TV dalam Wi-Fi…");
         worker.execute(() -> {
@@ -266,15 +410,17 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (found.isEmpty()) {
                     status.setText(Messages.NOT_FOUND);
-                } else if (found.size() == 1) {
-                    ip.setText(found.get(0));
+                    return;
+                }
+                int before = tvs.all().size();
+                tvs.addFound(found);
+                status.setText(found.size() + " TV dijumpai, " + (tvs.all().size() - before) + " baharu ditambah.");
+                if (host().isEmpty()) {
+                    mainIp = tvs.all().get(0).ip;
+                    saveTvs();
                     connect();
                 } else {
-                    String[] items = found.toArray(new String[0]);
-                    new AlertDialog.Builder(this).setTitle("Pilih TV").setItems(items, (d, w) -> {
-                        ip.setText(items[w]);
-                        connect();
-                    }).show();
+                    saveTvs();
                 }
             });
         });
@@ -284,7 +430,7 @@ public class MainActivity extends Activity {
     private void connect() {
         String h = host();
         if (h.isEmpty()) {
-            status.setText("Tekan Cari TV atau taip IP TV.");
+            status.setText("Tekan Cari semua TV atau + IP.");
             return;
         }
         status.setText("Bersambung ke " + h + "… Jika TV bertanya, tanda Always allow dan tekan OK.");
@@ -304,6 +450,8 @@ public class MainActivity extends Activity {
                 int glass = TvVersion.parse(tv.shell(TvVersion.QUERY));
                 prefs.edit().putString("ip", h).apply();
                 runOnUiThread(() -> {
+                    tvStatus.put(h, TvStatus.label(TvStatus.of(glass, TvVersion.BUNDLED)));
+                    renderTvs();
                     showDetected(detected, release);
                     if (glass < 0) {
                         status.setText("Bersambung ✓ " + h + ". Glass TV belum dipasang: tekan Pasang & jadikan Home.");
@@ -361,37 +509,45 @@ public class MainActivity extends Activity {
 
     // ---- install and make Home ---------------------------------------------------------------------
 
-    private void confirmSetupHome() {
-        String h = host();
-        if (h.isEmpty()) {
-            status.setText("Tekan Cari TV atau taip IP TV dahulu.");
+    private void confirmSetupSelected() {
+        List<String> chosen = tvs.selectedIps();
+        if (chosen.isEmpty()) {
+            status.setText("Tanda sekurang-kurangnya satu TV.");
             return;
         }
         new AlertDialog.Builder(this)
-                .setTitle("Pasang Glass TV di TV?")
-                .setMessage("Glass TV akan dipasang dan dijadikan Home. Home asal TV dimatikan (tidak dibuang). "
-                        + "Jika ada yang tidak kena, Home asal dikembalikan dengan sendiri.\n\n"
-                        + "Jika TV bertanya \"Allow USB debugging?\", tanda Always allow dan tekan OK. "
-                        + "Proses ini ambil masa ±1 minit.")
-                .setPositiveButton("Pasang", (d, w) -> setupHome(h))
+                .setTitle("Pasang / kemas kini Glass TV pada " + chosen.size() + " TV?")
+                .setMessage("Glass TV akan dipasang (atau dikemas kini) dan dijadikan Home pada setiap TV yang ditanda, "
+                        + "satu demi satu. Home asal dimatikan (tidak dibuang); jika ada yang tidak kena pada sesebuah TV, "
+                        + "Home asalnya dikembalikan dengan sendiri.\n\n"
+                        + "Jika TV bertanya \"Allow USB debugging?\", tanda Always allow dan tekan OK. ±1 minit setiap TV.")
+                .setPositiveButton("Pasang", (d, w) -> setupHomeAll(chosen))
                 .setNegativeButton("Batal", null)
                 .show();
     }
 
-    private void setupHome(String h) {
+    private void setupHomeAll(List<String> ips) {
         findViewById(R.id.setupHome).setEnabled(false);
-        status.setText("Bersambung ke " + h + "…");
         worker.execute(() -> {
-            String line = HomeSetup.run(this, h, step -> runOnUiThread(() -> status.setText(step)));
+            Batch batch = new Batch();
+            StringBuilder reports = new StringBuilder();
+            int i = 0;
+            for (String h : ips) {
+                TvList.Entry e = tvs.find(h);
+                String label = e != null ? e.name : h;
+                final String prefix = "(" + (++i) + "/" + ips.size() + ") " + label + ": ";
+                String line = HomeSetup.run(this, h, step -> runOnUiThread(() -> status.setText(prefix + step)));
+                batch.add(label, line);
+                if (HomeSetup.lastReport != null) reports.append("\n\n— ").append(label).append(" —\n").append(HomeSetup.lastReport);
+                if (line.startsWith("Siap")) runOnUiThread(() -> tvStatus.put(h, TvStatus.label(TvStatus.of(TvVersion.BUNDLED, TvVersion.BUNDLED))));
+            }
             runOnUiThread(() -> {
                 findViewById(R.id.setupHome).setEnabled(true);
-                status.setText(line);
-                if (HomeSetup.lastReport != null) showReport(HomeSetup.lastReport);
-                if (line.startsWith("Siap")) {
-                    filled = false;   // Glass TV is new on the TV: read its settings again before HANTAR
-                    prefs.edit().putString("ip", h).apply();
-                    connectQuietly(line);
-                }
+                renderTvs();
+                status.setText("Pasang: " + batch.headline());
+                showReport("Pasang: " + batch.headline(), batch.details() + reports);
+                filled = false;   // Glass TV may be new on the main TV: read its settings again before HANTAR
+                if (!host().isEmpty()) connect();
             });
         });
     }
@@ -610,20 +766,37 @@ public class MainActivity extends Activity {
             return;
         }
         Settings part = Settings.only(section, s);
+        List<String> targets = tvs.selectedIps();
+        if (targets.isEmpty()) {
+            done("Tanda sekurang-kurangnya satu TV dalam TV SAYA.");
+            return;
+        }
         List<Uri> sendPhotos = wallpaper && !s.places ? new ArrayList<>(photos) : new ArrayList<>();
         boolean dark = darken.isChecked();
         boolean whole = fit.isChecked();
         Uri aw = prayer ? azanWallpaper : null, a = prayer ? azan : null, as = prayer ? azanSubuh : null;
         boolean azanWhole = ((RadioButton) findViewById(R.id.azanFit)).isChecked();
         setSending(true);
-        result.setText("Menghantar…");
+        result.setText("Menyediakan…");
         worker.execute(() -> {
-            String line = Sender.send(this, h, part, sendPhotos, dark, whole, aw, azanWhole, a, as,
+            Sender.Prepared pr = Sender.prepare(this, part, sendPhotos, dark, whole, aw, azanWhole, a, as,
                     step -> runOnUiThread(() -> result.setText(step)));
+            Batch batch = new Batch();
+            int i = 0;
+            for (String ip : targets) {
+                TvList.Entry e = tvs.find(ip);
+                String label = e != null ? e.name : ip;
+                final String prefix = "(" + (++i) + "/" + targets.size() + ") " + label + ": ";
+                String line = Sender.sendTo(this, ip, part, pr,
+                        step -> runOnUiThread(() -> result.setText(prefix + step)));
+                batch.add(label, line);
+            }
+            pr.cleanup();
             runOnUiThread(() -> {
                 setSending(false);
-                done(line);
-                if (line.startsWith("Siap")) forgetSent(!sendPhotos.isEmpty(), aw != null || a != null || as != null);
+                done(batch.headline());
+                if (targets.size() > 1 || !batch.allOk()) showReport("Hantar: " + batch.headline(), batch.details());
+                if (batch.allOk()) forgetSent(!sendPhotos.isEmpty(), aw != null || a != null || as != null);
             });
         });
     }

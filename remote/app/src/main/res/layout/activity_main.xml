@@ -5,108 +5,119 @@
 
     <LinearLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="20dp">
+        android:orientation="vertical" android:paddingStart="16dp" android:paddingEnd="16dp"
+        android:paddingTop="20dp" android:paddingBottom="28dp">
 
+        <!-- Header -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Glass TV Remote" android:textColor="#FFFFFFFF" android:textSize="24sp" android:textStyle="bold" />
-        <TextView android:id="@+id/version" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textColor="#80FFFFFF" android:textSize="12sp" />
+            android:text="Glass TV Remote" android:textColor="#FFFFFFFF" android:textSize="26sp" android:textStyle="bold" />
+        <TextView android:id="@+id/version" style="@style/Hint" android:layout_marginTop="2dp" />
 
-        <!-- Sambungan -->
-        <TextView style="@style/Section" android:text="SAMBUNGAN" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Jenis TV  " android:textColor="#FFFFFFFF" />
-            <Spinner android:id="@+id/tvType" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <!-- TV SAYA -->
+        <LinearLayout style="@style/Card">
+            <TextView style="@style/Section" android:text="TV SAYA" />
+            <TextView style="@style/Hint" android:text="Tanda TV yang mahu dikemas kini. Ketik nama untuk jadikan TV utama (borang diisi dari TV itu). Tekan lama untuk tukar nama atau buang." />
+            <LinearLayout android:id="@+id/tvRows" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginTop="10dp" />
+            <TextView android:id="@+id/tvEmpty" style="@style/Hint" android:layout_marginTop="10dp"
+                android:text="Belum ada TV. Tekan Cari semua TV." />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/scan" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="Cari semua TV" />
+                <Button android:id="@+id/addIp" style="@style/BtnSecondary" android:layout_width="wrap_content" android:layout_marginStart="8dp" android:text="+ IP" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/selectAll" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="Pilih semua" />
+                <Button android:id="@+id/checkAll" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:layout_marginStart="8dp" android:text="Semak semua" />
+            </LinearLayout>
+            <Button android:id="@+id/setupHome" style="@style/BtnPrimary" android:text="Pasang / kemas kini Glass TV (yang ditanda)" />
+            <TextView android:id="@+id/status" style="@style/Row" android:textSize="13.5sp" android:textColor="#B3FFFFFF" android:text="Belum bersambung" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+                android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Jenis TV  " android:textColor="#B3FFFFFF" android:textSize="13.5sp" />
+                <Spinner android:id="@+id/tvType" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView android:id="@+id/tvTypeNote" style="@style/Hint" />
         </LinearLayout>
-        <TextView android:id="@+id/tvTypeNote" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" />
-        <TextView android:id="@+id/status" style="@style/Row" android:text="Belum bersambung" android:textColor="#B3FFFFFF" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-            <EditText android:id="@+id/ip" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:hint="IP TV, contoh 192.168.1.50" android:inputType="phone" android:textColor="#FFFFFFFF" android:textColorHint="#66FFFFFF" />
-            <Button android:id="@+id/scan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cari TV" />
-            <Button android:id="@+id/connect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sambung" />
-        </LinearLayout>
-        <Button android:id="@+id/setupHome" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
-            android:text="Pasang &amp; jadikan Home" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
 
         <!-- Gambar latar -->
-        <TextView style="@style/Section" android:text="GAMBAR LATAR" />
-        <RadioGroup android:id="@+id/wallMode" android:layout_width="match_parent" android:layout_height="wrap_content">
-            <RadioButton android:id="@+id/places" style="@style/Row" android:text="Tempat menarik (bertukar setiap minggu)" />
-            <RadioButton android:id="@+id/own" style="@style/Row" android:text="Gambar saya" />
-        </RadioGroup>
-        <LinearLayout android:id="@+id/ownBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-            <Button android:id="@+id/pickPhotos" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+ Pilih foto" />
-            <TextView android:id="@+id/photoCount" style="@style/Row" android:textColor="#99FFFFFF" android:textSize="13sp"
-                android:text="Tiada foto dipilih. Tekan lama pada foto untuk buang." />
-            <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
-                <LinearLayout android:id="@+id/thumbs" android:layout_width="wrap_content" android:layout_height="72dp" />
-            </HorizontalScrollView>
-            <Switch android:id="@+id/fit" style="@style/Row" android:checked="true" android:text="Gambar penuh (tanpa potong)" />
-            <Switch android:id="@+id/darken" style="@style/Row" android:checked="true" android:text="Gelapkan sedikit (jam lebih jelas)" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tukar setiap  " android:textColor="#FFFFFFFF" />
-                <Spinner android:id="@+id/interval" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <LinearLayout style="@style/Card">
+            <TextView style="@style/Section" android:text="GAMBAR LATAR" />
+            <RadioGroup android:id="@+id/wallMode" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <RadioButton android:id="@+id/places" style="@style/Row" android:text="Tempat menarik (bertukar setiap minggu)" />
+                <RadioButton android:id="@+id/own" style="@style/Row" android:text="Gambar saya" />
+            </RadioGroup>
+            <LinearLayout android:id="@+id/ownBox" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <Button android:id="@+id/pickPhotos" style="@style/BtnSecondary" android:text="+ Pilih foto" />
+                <TextView android:id="@+id/photoCount" style="@style/Hint" android:text="Tiada foto dipilih. Tekan lama pada foto untuk buang." />
+                <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
+                    <LinearLayout android:id="@+id/thumbs" android:layout_width="wrap_content" android:layout_height="72dp" />
+                </HorizontalScrollView>
+                <Switch android:id="@+id/fit" style="@style/Row" android:checked="true" android:text="Gambar penuh (tanpa potong)" />
+                <Switch android:id="@+id/darken" style="@style/Row" android:checked="true" android:text="Gelapkan sedikit (jam lebih jelas)" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tukar setiap  " android:textColor="#FFFFFFFF" />
+                    <Spinner android:id="@+id/interval" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+            <Button android:id="@+id/sendWallpaper" style="@style/BtnPrimary" android:text="Hantar gambar latar" />
+        </LinearLayout>
+
+        <!-- Home -->
+        <LinearLayout style="@style/Card">
+            <TextView style="@style/Section" android:text="HOME" />
+            <Button android:id="@+id/pickDock" style="@style/BtnSecondary" android:text="Pilih app dock" />
+            <TextView android:id="@+id/dock" style="@style/Hint" android:text="Dock: tidak diubah" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="App sebaris  " android:textColor="#FFFFFFFF" />
+                <Spinner android:id="@+id/columns" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </LinearLayout>
+            <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="Butang Wi-Fi di atas" />
+            <Switch android:id="@+id/reduced" style="@style/Row" android:text="Animasi ringan" />
+            <Switch android:id="@+id/keepOn" style="@style/Row" android:text="Tiada screensaver (Home kekal di skrin)" />
+            <Button android:id="@+id/sendHome" style="@style/BtnPrimary" android:text="Hantar Home" />
+        </LinearLayout>
+
+        <!-- Solat -->
+        <LinearLayout style="@style/Card">
+            <TextView style="@style/Section" android:text="SOLAT &amp; AZAN" />
+            <Spinner android:id="@+id/zone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+            <TextView style="@style/Hint" android:text="Azan pada waktu:" />
+            <LinearLayout android:id="@+id/prayers" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+            <Button android:id="@+id/pickAzanWallpaper" style="@style/BtnSecondary" android:text="Pilih gambar latar azan" />
+            <TextView android:id="@+id/azanWallpaperName" style="@style/Hint" android:text="Gambar latar azan: tidak diubah" />
+            <RadioGroup android:id="@+id/azanFitMode" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <RadioButton android:id="@+id/azanFit" style="@style/Row" android:checked="true" android:text="Gambar penuh (tanpa potong, tepi kabur)" />
+                <RadioButton android:id="@+id/azanFill" style="@style/Row" android:text="Penuh skrin (dipotong sedikit)" />
+            </RadioGroup>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/pickAzan" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="MP3 azan" />
+                <Button android:id="@+id/pickAzanSubuh" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:layout_marginStart="8dp" android:text="MP3 azan Subuh" />
+            </LinearLayout>
+            <TextView android:id="@+id/azanName" style="@style/Hint" android:text="Azan: tidak diubah" />
+            <TextView android:id="@+id/azanSubuhName" style="@style/Hint" android:text="Azan Subuh: tidak diubah" />
+            <TextView style="@style/Hint" android:layout_marginTop="12dp" android:text="Ayat di tengah skrin ({waktu} dan {zon} diisi sendiri):" />
+            <EditText android:id="@+id/azanText" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="15sp" />
+            <EditText android:id="@+id/azanSubtext" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="15sp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Latar semasa azan  " android:textColor="#FFFFFFFF" />
+                <Spinner android:id="@+id/dim" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </LinearLayout>
+            <Button android:id="@+id/sendPrayer" style="@style/BtnPrimary" android:text="Hantar solat &amp; azan" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                <Button android:id="@+id/testAzan" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="Uji azan (TV utama)" />
+                <Button android:id="@+id/checkAzan" style="@style/BtnSecondary" android:layout_width="0dp" android:layout_weight="1" android:layout_marginStart="8dp" android:text="Semak azan" />
             </LinearLayout>
         </LinearLayout>
 
-        <Button android:id="@+id/sendWallpaper" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
-            android:text="Hantar gambar latar" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
-
-        <!-- Home -->
-        <TextView style="@style/Section" android:text="HOME" />
-        <Button android:id="@+id/pickDock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih app dock" />
-        <TextView android:id="@+id/dock" style="@style/Row" android:textColor="#B3FFFFFF" android:text="Dock: tidak diubah" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="App sebaris  " android:textColor="#FFFFFFFF" />
-            <Spinner android:id="@+id/columns" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-        </LinearLayout>
-        <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="Butang Wi-Fi di atas" />
-        <Switch android:id="@+id/reduced" style="@style/Row" android:text="Animasi ringan" />
-        <Switch android:id="@+id/keepOn" style="@style/Row" android:text="Tiada screensaver (Home kekal di skrin)" />
-
-        <Button android:id="@+id/sendHome" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
-            android:text="Hantar Home" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
-
-        <!-- Solat -->
-        <TextView style="@style/Section" android:text="SOLAT" />
-        <Spinner android:id="@+id/zone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
-        <TextView style="@style/Row" android:text="Azan pada waktu:" android:textColor="#B3FFFFFF" />
-        <LinearLayout android:id="@+id/prayers" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
-        <Button android:id="@+id/pickAzanWallpaper" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih gambar latar azan" />
-        <TextView android:id="@+id/azanWallpaperName" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" android:text="Gambar latar azan: tidak diubah" />
-        <RadioGroup android:id="@+id/azanFitMode" android:layout_width="match_parent" android:layout_height="wrap_content">
-            <RadioButton android:id="@+id/azanFit" style="@style/Row" android:checked="true" android:text="Gambar penuh (tanpa potong, tepi kabur)" />
-            <RadioButton android:id="@+id/azanFill" style="@style/Row" android:text="Penuh skrin (dipotong sedikit)" />
-        </RadioGroup>
-        <Button android:id="@+id/pickAzan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih MP3 azan" />
-        <TextView android:id="@+id/azanName" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" android:text="Azan: tidak diubah" />
-        <Button android:id="@+id/pickAzanSubuh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih MP3 azan Subuh" />
-        <TextView android:id="@+id/azanSubuhName" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" android:text="Azan Subuh: tidak diubah" />
-        <TextView style="@style/Row" android:text="Ayat di tengah skrin ({waktu} dan {zon} diisi sendiri):" android:textColor="#B3FFFFFF" />
-        <EditText android:id="@+id/azanText" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" />
-        <EditText android:id="@+id/azanSubtext" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Latar semasa azan  " android:textColor="#FFFFFFFF" />
-            <Spinner android:id="@+id/dim" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <Button android:id="@+id/sendPrayer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
-            android:text="Hantar solat &amp; azan" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp">
-            <Button android:id="@+id/testAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Uji azan sekarang" />
-            <Button android:id="@+id/checkAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Semak azan" />
-        </LinearLayout>
-
         <!-- Bismillah -->
-        <TextView style="@style/Section" android:text="BISMILLAH" />
-        <Switch android:id="@+id/bismillah" style="@style/Row" android:checked="true" android:text="Bismillah bila TV dihidupkan" />
+        <LinearLayout style="@style/Card">
+            <TextView style="@style/Section" android:text="BISMILLAH" />
+            <Switch android:id="@+id/bismillah" style="@style/Row" android:checked="true" android:text="Bismillah bila TV dihidupkan" />
+            <Button android:id="@+id/sendBismillah" style="@style/BtnPrimary" android:text="Hantar Bismillah" />
+        </LinearLayout>
 
-        <Button android:id="@+id/sendBismillah" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
-            android:text="Hantar Bismillah" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
-        <Button android:id="@+id/send" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginTop="28dp"
-            android:text="HANTAR SEMUA KE TV" android:textSize="18sp" android:textStyle="bold"
-            android:backgroundTint="#E3C78C" android:textColor="#14120F" />
+        <Button android:id="@+id/send" style="@style/BtnPrimary" android:layout_height="60dp" android:layout_marginTop="22dp"
+            android:text="HANTAR SEMUA ke TV yang ditanda" android:textSize="17sp" />
         <TextView android:id="@+id/result" style="@style/Row" android:gravity="center" android:textColor="#E3C78C" />
     </LinearLayout>
 </ScrollView>

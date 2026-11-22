@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 /** HANTAR KE TV: photos, azan recordings and settings to the TV, then Home restarts with them. */
@@ -17,48 +18,90 @@ final class Sender {
 
     private Sender() {}
 
-    /** Runs on a background thread; returns the line shown under the button. */
-    static String send(Context c, String host, Settings s, List<Uri> photos, boolean darken, boolean fit,
-                       Uri azanWallpaper, boolean azanFit, Uri azan, Uri azanSubuh, Progress p) {
+    /** Files made once on the phone and then sent to every chosen TV. */
+    static final class Prepared {
+        final List<File> photos = new ArrayList<>();
+        int picked, skipped;
+        File azanWallpaper, azan, azanSubuh;
+        /** Set when there is nothing sensible to send (all photos unreadable, an MP3 too big). */
+        String error;
+
+        void cleanup() {
+            for (File f : photos) f.delete();
+            for (File f : new File[]{azanWallpaper, azan, azanSubuh}) if (f != null) f.delete();
+        }
+    }
+
+    /** Prepares photos, the azan picture and MP3s once, whatever the number of TVs. Background thread. */
+    static Prepared prepare(Context c, Settings s, List<Uri> photos, boolean darken, boolean fit,
+                            Uri azanWallpaper, boolean azanFit, Uri azan, Uri azanSubuh, Progress p) {
+        Prepared pr = new Prepared();
+        File dir = new File(c.getCacheDir(), "send");
+        dir.mkdirs();
+        try {
+            if (Boolean.FALSE.equals(s.places) && !photos.isEmpty()) {
+                pr.picked = photos.size();
+                for (int i = 0; i < photos.size() && pr.photos.size() < PhotoMath.MAX_PHOTOS; i++) {
+                    p.step("Menyediakan gambar " + (i + 1) + " daripada " + photos.size() + "…");
+                    try {
+                        File f = PhotoPrep.prepare(c, photos.get(i), darken, fit, PhotoMath.fileName(pr.photos.size()));
+                        File kept = new File(dir, f.getName());
+                        if (!f.renameTo(kept)) kept = f;
+                        pr.photos.add(kept);
+                    } catch (Exception | OutOfMemoryError e) {
+                        pr.skipped++;   // deleted from the gallery since it was picked, not a picture, or too big
+                    }
+                }
+                pr.error = SendGate.afterPhotos(pr.picked, pr.photos.size());
+            }
+            if (azanWallpaper != null) {
+                p.step("Menyediakan gambar latar azan…");
+                File w = PhotoPrep.prepare(c, azanWallpaper, false, azanFit, "azan_wallpaper.jpg");
+                pr.azanWallpaper = new File(dir, w.getName());
+                if (!w.renameTo(pr.azanWallpaper)) pr.azanWallpaper = w;
+            }
+            if (azan != null) pr.azan = copyAudio(c, azan, new File(dir, "azan.mp3"));
+            if (azanSubuh != null) pr.azanSubuh = copyAudio(c, azanSubuh, new File(dir, "azan_subuh.mp3"));
+        } catch (Exception e) {
+            pr.error = Messages.forError(e);
+        }
+        return pr;
+    }
+
+    /** Sends the prepared files and this section's settings to one TV; the line for that TV. */
+    static String sendTo(Context c, String host, Settings s, Prepared pr, Progress p) {
+        if (pr.error != null) return pr.error;
         try (Tv tv = Tv.connect(c, host)) {
-            p.step("Bersambung ke TV…");
+            p.step("Bersambung…");
             tv.shell(TvCommands.makeDir());
             boolean inbox = tv.usesInbox();
             if (inbox) tv.shell(TvCommands.GRANT_FILES);
             String existing = tv.readConfig();
 
-            int sent = 0, skipped = 0;
-            if (Boolean.FALSE.equals(s.places) && !photos.isEmpty()) {
+            if (!pr.photos.isEmpty()) {
                 tv.shell(inbox ? "rm -rf " + TvCommands.INBOX + "/wallpapers" : TvCommands.prepareWallpapers());
-                for (int i = 0; i < photos.size() && sent < PhotoMath.MAX_PHOTOS; i++) {
-                    p.step("Menyediakan gambar " + (i + 1) + " daripada " + photos.size() + "…");
-                    File f;
-                    try {
-                        f = PhotoPrep.prepare(c, photos.get(i), darken, fit, PhotoMath.fileName(sent));
-                    } catch (Exception | OutOfMemoryError e) {
-                        skipped++;   // deleted from the gallery since it was picked, not a picture, or too big
-                        continue;
-                    }
+                int i = 0;
+                for (File f : pr.photos) {
+                    p.step("Menghantar gambar " + (++i) + " daripada " + pr.photos.size() + "…");
                     tv.push(f, TvCommands.DIR + "/wallpapers.new/" + f.getName());
-                    f.delete();
-                    sent++;
                 }
-                String none = SendGate.afterPhotos(photos.size(), sent);
-                if (none != null) return none;   // keep the TV as it is rather than a blank background
                 if (!inbox) tv.shell(TvCommands.swapWallpapers());   // in the inbox, Glass TV swaps them itself
             } else if (Boolean.TRUE.equals(s.places)) {
                 tv.shell(inbox ? "mkdir -p " + TvCommands.INBOX + "; touch " + TvCommands.INBOX + "/clear-wallpapers"
                         : TvCommands.clearWallpapers());
             }
-
-            if (azanWallpaper != null) {
-                p.step("Menyediakan gambar latar azan…");
-                File w = PhotoPrep.prepare(c, azanWallpaper, false, azanFit, "azan_wallpaper.jpg");
-                tv.push(w, TvCommands.azanWallpaperPath());
-                w.delete();
+            if (pr.azanWallpaper != null) {
+                p.step("Menghantar gambar latar azan…");
+                tv.push(pr.azanWallpaper, TvCommands.azanWallpaperPath());
             }
-            if (azan != null) pushAudio(c, tv, azan, "azan.mp3", p);
-            if (azanSubuh != null) pushAudio(c, tv, azanSubuh, "azan_subuh.mp3", p);
+            if (pr.azan != null) {
+                p.step("Menghantar azan.mp3…");
+                tv.push(pr.azan, TvCommands.DIR + "/azan.mp3");
+            }
+            if (pr.azanSubuh != null) {
+                p.step("Menghantar azan_subuh.mp3…");
+                tv.push(pr.azanSubuh, TvCommands.DIR + "/azan_subuh.mp3");
+            }
 
             p.step("Menyimpan tetapan…");
             File cfg = new File(c.getCacheDir(), "config.json");
@@ -69,7 +112,7 @@ final class Sender {
             cfg.delete();
 
             tv.shell(HomeSetup.GRANT_LOCATION);   // the Wi-Fi name on Home (installs from older versions lack it)
-            // "Kekal di Home" also turns Android's own screensaver off (and back on when switched off).
+            // "Tiada screensaver" also turns Android's own screensaver off (and back on when switched off).
             if (s.keepScreenOn != null) tv.shell(TvCommands.screensaver(!s.keepScreenOn));
             p.step("Memulakan semula Home…");
             tv.shell(TvCommands.restartHome());
@@ -82,30 +125,28 @@ final class Sender {
                 tv.shell("settings put secure accessibility_enabled 1");
             }
             String done = "Siap ✓";
-            if (sent > 0) done += " " + sent + " gambar dihantar";
-            if (skipped > 0) done += " (" + skipped + " gambar tidak dapat dibaca)";
+            if (!pr.photos.isEmpty()) done += " " + pr.photos.size() + " gambar";
+            if (pr.skipped > 0) done += " (" + pr.skipped + " gambar tidak dapat dibaca)";
             return done;
         } catch (Exception e) {
             return Messages.forError(e);
         }
     }
 
-    private static void pushAudio(Context c, Tv tv, Uri uri, String name, Progress p) throws IOException {
-        p.step("Menghantar " + name + "…");
-        File f = new File(c.getCacheDir(), name);
+    /** A picked MP3 copied once, refusing more than 5 MB. */
+    private static File copyAudio(Context c, Uri uri, File to) throws IOException {
         long total = 0;
         try (InputStream in = c.getContentResolver().openInputStream(uri);
-             FileOutputStream out = new FileOutputStream(f)) {
-            if (in == null) throw new IOException(name + " tidak dapat dibuka");
+             FileOutputStream out = new FileOutputStream(to)) {
+            if (in == null) throw new IOException(to.getName() + " tidak dapat dibuka");
             byte[] buf = new byte[64 * 1024];
             int r;
             while ((r = in.read(buf)) > 0) {
                 total += r;
-                if (total > PhotoMath.MAX_MP3) throw new IOException(name + " melebihi 5 MB");
+                if (total > PhotoMath.MAX_MP3) throw new IOException(to.getName() + " melebihi 5 MB");
                 out.write(buf, 0, r);
             }
         }
-        tv.push(f, TvCommands.DIR + "/" + name);
-        f.delete();
+        return to;
     }
 }
