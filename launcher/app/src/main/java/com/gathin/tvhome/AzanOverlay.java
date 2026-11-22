@@ -38,21 +38,19 @@ final class AzanOverlay {
         LinearLayout middle = new LinearLayout(c);
         middle.setOrientation(LinearLayout.VERTICAL);
         middle.setGravity(Gravity.CENTER_HORIZONTAL);
-        middle.addView(text(c, font, (prayer.label() + " · " + time).toUpperCase(Locale.ROOT), 15, GOLD, 500, 0.25f));
-        TextView main = text(c, font, s.textFor(prayer), 30, 0xFFFFFFFF, 600, 0f);
+        // The words, bold with a dark outline so they read over any picture. The prayer and its time are
+        // in the island at the top already.
+        TextView main = outlined(c, font, s.textFor(prayer), 32, 700, dp);
         main.setGravity(Gravity.CENTER);
-        main.setMaxWidth(Math.round(760 * dp));
+        main.setMaxWidth(Math.round(820 * dp));
         main.setLineSpacing(4 * dp, 1f);
-        main.setShadowLayer(8, 0, 2, 0xB3000000);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.topMargin = Math.round(14 * dp);
-        middle.addView(main, lp);
+        middle.addView(main, new LinearLayout.LayoutParams(-2, -2));
         String sub = s.subtextFor(prayer);
         if (!sub.isEmpty()) {
             LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
             sp.topMargin = Math.round(16 * dp);
-            TextView subView = text(c, font, sub, 15, 0xD9FFFFFF, 400, 0f);
-            subView.setShadowLayer(6, 0, 1, 0xB3000000);
+            TextView subView = outlined(c, font, sub, 18, 600, dp);
+            subView.setGravity(Gravity.CENTER);
             middle.addView(subView, sp);
         }
         root.addView(middle, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER));
@@ -114,6 +112,19 @@ final class AzanOverlay {
         ok.setPadding(Math.round(11 * dp), Math.round(5 * dp), Math.round(11 * dp), Math.round(5 * dp));
         island.addView(ok);
         return island;
+    }
+
+    private static TextView outlined(Context c, Typeface font, String s, float sp, int weight, float dp) {
+        OutlineTextView t = new OutlineTextView(c, 5 * dp, 0xFF000000);
+        t.setText(s);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        t.setTextColor(0xFFFFFFFF);
+        t.setTypeface(font);
+        t.setFontVariationSettings("'wght' " + weight);
+        t.setIncludeFontPadding(false);
+        int pad = Math.round(4 * dp);   // room for the outline at the edges
+        t.setPadding(pad, pad, pad, pad);
+        return t;
     }
 
     private static TextView text(Context c, Typeface font, String s, float sp, int color, int weight, float spacing) {
