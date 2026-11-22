@@ -9,6 +9,8 @@
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Glass TV Remote" android:textColor="#FFFFFFFF" android:textSize="24sp" android:textStyle="bold" />
+        <TextView android:id="@+id/version" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="#80FFFFFF" android:textSize="12sp" />
 
         <!-- Sambungan -->
         <TextView style="@style/Section" android:text="SAMBUNGAN" />
@@ -48,6 +50,9 @@
             </LinearLayout>
         </LinearLayout>
 
+        <Button android:id="@+id/sendWallpaper" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:text="Hantar gambar latar" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
+
         <!-- Home -->
         <TextView style="@style/Section" android:text="HOME" />
         <Button android:id="@+id/pickDock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih app dock" />
@@ -58,6 +63,9 @@
         </LinearLayout>
         <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="Butang Wi-Fi di atas" />
         <Switch android:id="@+id/reduced" style="@style/Row" android:text="Animasi ringan" />
+
+        <Button android:id="@+id/sendHome" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:text="Hantar Home" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
 
         <!-- Solat -->
         <TextView style="@style/Section" android:text="SOLAT" />
@@ -78,6 +86,8 @@
             <Spinner android:id="@+id/dim" android:layout_width="wrap_content" android:layout_height="wrap_content" />
         </LinearLayout>
 
+        <Button android:id="@+id/sendPrayer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:text="Hantar solat &amp; azan" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp">
             <Button android:id="@+id/testAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Uji azan sekarang" />
             <Button android:id="@+id/checkAzan" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Semak azan" />
@@ -87,8 +97,10 @@
         <TextView style="@style/Section" android:text="BISMILLAH" />
         <Switch android:id="@+id/bismillah" style="@style/Row" android:checked="true" android:text="Bismillah bila TV dihidupkan" />
 
+        <Button android:id="@+id/sendBismillah" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:text="Hantar Bismillah" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />
         <Button android:id="@+id/send" android:layout_width="match_parent" android:layout_height="64dp" android:layout_marginTop="28dp"
-            android:text="HANTAR KE TV" android:textSize="18sp" android:textStyle="bold"
+            android:text="HANTAR SEMUA KE TV" android:textSize="18sp" android:textStyle="bold"
             android:backgroundTint="#E3C78C" android:textColor="#14120F" />
         <TextView android:id="@+id/result" style="@style/Row" android:gravity="center" android:textColor="#E3C78C" />
     </LinearLayout>

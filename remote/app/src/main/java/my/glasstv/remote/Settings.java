@@ -6,6 +6,8 @@ import java.util.Map;
 
 /** What the form says. Null fields are left alone on the TV; set ones become config.json keys. */
 final class Settings {
+    static final int ALL = 0, WALLPAPER = 1, HOME = 2, PRAYER = 3, BISMILLAH = 4;
+
     Boolean places;
     Integer wallpaperSeconds;
     List<String> dockApps;
@@ -16,6 +18,32 @@ final class Settings {
     List<String> azanPrayers;
     String azanText, azanSubtext;
     Integer azanDim;
+
+    /** A copy holding only one section's fields, so its send button leaves the rest of the TV alone. */
+    static Settings only(int section, Settings from) {
+        if (section == ALL) return from;
+        Settings s = new Settings();
+        if (section == WALLPAPER) {
+            s.places = from.places;
+            s.wallpaperSeconds = from.wallpaperSeconds;
+        } else if (section == HOME) {
+            s.dockApps = from.dockApps;
+            s.columns = from.columns;
+            s.networkPill = from.networkPill;
+            s.reducedMotion = from.reducedMotion;
+            s.backgroundColor = from.backgroundColor;
+        } else if (section == PRAYER) {
+            s.zone = from.zone;
+            s.zoneName = from.zoneName;
+            s.azanPrayers = from.azanPrayers;
+            s.azanText = from.azanText;
+            s.azanSubtext = from.azanSubtext;
+            s.azanDim = from.azanDim;
+        } else if (section == BISMILLAH) {
+            s.bismillah = from.bismillah;
+        }
+        return s;
+    }
 
     Map<String, Object> changes() {
         Map<String, Object> c = new LinkedHashMap<>();

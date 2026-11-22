@@ -67,6 +67,10 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
         prefs = getSharedPreferences("remote", MODE_PRIVATE);
+        try {
+            ((TextView) findViewById(R.id.version)).setText("Versi " + getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
+        } catch (Exception ignored) {
+        }
         status = findViewById(R.id.status);
         result = findViewById(R.id.result);
         photoCount = findViewById(R.id.photoCount);
@@ -132,7 +136,11 @@ public class MainActivity extends Activity {
         findViewById(R.id.testAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_TEST,
                 "Azan diuji di TV. Tekan OK pada remote untuk kembali.", false));
         findViewById(R.id.checkAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_REPORT, "Semakan azan", true));
-        send.setOnClickListener(v -> send());
+        send.setOnClickListener(v -> send(Settings.ALL));
+        findViewById(R.id.sendWallpaper).setOnClickListener(v -> send(Settings.WALLPAPER));
+        findViewById(R.id.sendHome).setOnClickListener(v -> send(Settings.HOME));
+        findViewById(R.id.sendPrayer).setOnClickListener(v -> send(Settings.PRAYER));
+        findViewById(R.id.sendBismillah).setOnClickListener(v -> send(Settings.BISMILLAH));
 
         Spinner tvType = findViewById(R.id.tvType);
         String[] typeLabels = new String[TvTypes.ALL.length];
@@ -233,7 +241,8 @@ public class MainActivity extends Activity {
     private void applyTvType(TvTypes.Type t) {
         prefs.edit().putString("tvType", t.key).apply();
         ((TextView) findViewById(R.id.tvTypeNote)).setText(t.note);
-        for (int id : new int[]{R.id.scan, R.id.connect, R.id.setupHome, R.id.send}) findViewById(id).setEnabled(t.supported);
+        for (int id : new int[]{R.id.scan, R.id.connect, R.id.setupHome, R.id.send, R.id.sendWallpaper, R.id.sendHome,
+                R.id.sendPrayer, R.id.sendBismillah, R.id.testAzan, R.id.checkAzan}) findViewById(id).setEnabled(t.supported);
         if (!t.supported) status.setText("Glass TV tidak boleh dipasang pada " + t.label + ".");
     }
 
@@ -555,10 +564,11 @@ public class MainActivity extends Activity {
 
     // ---- sending ---------------------------------------------------------------------------------
 
-    private void send() {
+    /** Sends one section (Settings.WALLPAPER, HOME, PRAYER, BISMILLAH) or ALL; the rest of the TV stays as it is. */
+    private void send(int section) {
         String h = host();
         if (h.isEmpty()) {
-            result.setText("Sambung ke TV dahulu.");
+            done("Sambung ke TV dahulu.");
             return;
         }
         Settings s = new Settings();
@@ -578,30 +588,64 @@ public class MainActivity extends Activity {
         s.azanText = azanText.getText().toString().trim();
         s.azanSubtext = azanSubtext.getText().toString().trim();
         s.azanDim = dim.getSelectedItemPosition();
-        if (on.isEmpty()) {
-            result.setText("Pilih sekurang-kurangnya satu waktu azan.");
+        boolean wallpaper = section == Settings.ALL || section == Settings.WALLPAPER;
+        boolean prayer = section == Settings.ALL || section == Settings.PRAYER;
+        if (prayer && on.isEmpty()) {
+            done("Pilih sekurang-kurangnya satu waktu azan.");
             return;
         }
-        String gate = SendGate.check(filled, own.isChecked(), photos.size(), tvHasPhotos);
+        String gate = SendGate.check(filled, wallpaper && own.isChecked(), photos.size(), tvHasPhotos);
         if (gate != null) {
-            result.setText(gate);
+            done(gate);
             if (!filled) connect();
             return;
         }
-        List<Uri> sendPhotos = s.places ? new ArrayList<>() : new ArrayList<>(photos);
+        Settings part = Settings.only(section, s);
+        List<Uri> sendPhotos = wallpaper && !s.places ? new ArrayList<>(photos) : new ArrayList<>();
         boolean dark = darken.isChecked();
         boolean whole = fit.isChecked();
-        Uri a = azan, as = azanSubuh, aw = azanWallpaper;
-        send.setEnabled(false);
+        Uri aw = prayer ? azanWallpaper : null, a = prayer ? azan : null, as = prayer ? azanSubuh : null;
+        setSending(true);
         result.setText("Menghantar…");
         worker.execute(() -> {
-            String line = Sender.send(this, h, s, sendPhotos, dark, whole, aw, a, as,
+            String line = Sender.send(this, h, part, sendPhotos, dark, whole, aw, a, as,
                     step -> runOnUiThread(() -> result.setText(step)));
             runOnUiThread(() -> {
-                result.setText(line);
-                send.setEnabled(true);
+                setSending(false);
+                done(line);
+                if (line.startsWith("Siap")) forgetSent(!sendPhotos.isEmpty(), aw != null || a != null || as != null);
             });
         });
+    }
+
+    /** The result shows at the bottom and, since the button may be higher up, as a toast too. */
+    private void done(String line) {
+        result.setText(line);
+        Toast.makeText(this, line, Toast.LENGTH_LONG).show();
+    }
+
+    private void setSending(boolean sending) {
+        for (int id : new int[]{R.id.send, R.id.sendWallpaper, R.id.sendHome, R.id.sendPrayer, R.id.sendBismillah}) {
+            findViewById(id).setEnabled(!sending);
+        }
+    }
+
+    /** What reached the TV is not sent again next time. */
+    private void forgetSent(boolean sentPhotos, boolean sentAzanFiles) {
+        if (sentPhotos) {
+            photos.clear();
+            thumbs.removeAllViews();
+            updatePhotoCount();
+            tvHasPhotos = true;
+        }
+        if (sentAzanFiles) {
+            azanWallpaper = null;
+            azan = null;
+            azanSubuh = null;
+            ((TextView) findViewById(R.id.azanWallpaperName)).setText("Gambar latar azan: sudah di TV");
+            azanName.setText("Azan: sudah di TV");
+            azanSubuhName.setText("Azan Subuh: sudah di TV / tidak diubah");
+        }
     }
 
     @Override
