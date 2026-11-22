@@ -1644,19 +1644,101 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         showNetworkMenu();
     }
 
+    /**
+     * The Wi-Fi networks around, in glass: the connected one first, then by signal. A saved or open
+     * network joins at once; a new one with a password asks for it in a glass box. Office (EAP),
+     * WPA3 and old WEP networks, and every network on Android 10+, open Wi-Fi settings instead.
+     */
     private void showNetworkMenu() {
         if (openMenu != null) return;
         updateWifiLabel();
         FrameLayout panel = (FrameLayout) getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
-        String name = networkName != null ? networkName : getString(R.string.wifi);
-        addInputRow(rows, () -> closeMenu(false), networkIcon, name,
-                networkOnline ? TvInputManager.INPUT_STATE_CONNECTED : TvInputManager.INPUT_STATE_DISCONNECTED,
+        Runnable close = () -> closeMenu(false);
+        String connected = networkOnline && networkName != null ? networkName : null;
+        for (WifiList.Net n : WifiList.rows(WifiList.scan(this), connected)) {
+            boolean isConnected = n.ssid.equals(connected);
+            addNetworkRow(rows, close, n, isConnected, () -> pickNetwork(n, isConnected));
+        }
+        if (rows.getChildCount() == 0 && networkName != null) {
+            addInputRow(rows, close, networkIcon, networkName,
+                    networkOnline ? TvInputManager.INPUT_STATE_CONNECTED : TvInputManager.INPUT_STATE_DISCONNECTED,
+                    () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
+        }
+        addSeparator(rows);
+        addInputRow(rows, close, R.drawable.ic_settings, "Tetapan Wi-Fi…", -1,
                 () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
-        int width = Math.max(btnWifi.getWidth(), (int) (220 * density));
+        int width = Math.max(btnWifi.getWidth(), (int) (260 * density));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         width = Math.max(width, panel.getMeasuredWidth());
         showMenu(panel, rows, btnWifi, width, false);
+    }
+
+    /** One network: its name, a lock when it has a password, "Connected" with the dot when in use. */
+    private void addNetworkRow(LinearLayout rows, Runnable close, WifiList.Net n, boolean connected, Runnable action) {
+        addInputRow(rows, close, n.secured() ? R.drawable.ic_lock : R.drawable.ic_wifi, n.ssid,
+                connected ? TvInputManager.INPUT_STATE_CONNECTED : -1, action);
+    }
+
+    private void pickNetwork(WifiList.Net n, boolean connected) {
+        if (connected) return;   // already on it
+        if (!WifiList.canJoin() || !n.directJoin()) {
+            open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
+            return;
+        }
+        if (!n.secured() || WifiList.savedId(this, n.ssid) >= 0) {
+            joinNetwork(n, null);
+            return;
+        }
+        handler.post(() -> showPasswordMenu(n));
+    }
+
+    private void joinNetwork(WifiList.Net n, String password) {
+        boolean ok = WifiList.join(this, n, password);
+        Toast.makeText(this, ok ? "Menyambung ke " + n.ssid + "…" : "Tidak dapat menyambung ke " + n.ssid,
+                Toast.LENGTH_SHORT).show();
+        if (!ok) open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
+    }
+
+    /** A glass box under the Wi-Fi pill: the network's name, the password field and Sambung. */
+    private void showPasswordMenu(WifiList.Net n) {
+        if (openMenu != null) return;
+        FrameLayout panel = (FrameLayout) getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        TextView title = new TextView(this);
+        title.setText(n.ssid);
+        title.setTextColor(0xFFFFFFFF);
+        title.setTextSize(15);
+        title.setTypeface(getResources().getFont(R.font.outfit));
+        int pad = (int) (12 * density);
+        title.setPadding(pad, pad / 2, pad, pad / 2);
+        rows.addView(title);
+        android.widget.EditText pw = new android.widget.EditText(this);
+        pw.setHint("Kata laluan Wi-Fi");
+        pw.setHintTextColor(0x80FFFFFF);
+        pw.setTextColor(0xFFFFFFFF);
+        pw.setSingleLine(true);
+        pw.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        pw.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        pw.setBackgroundColor(0x33000000);
+        pw.setPadding(pad, pad / 2, pad, pad / 2);
+        pw.setFocusable(true);
+        rows.addView(pw, new LinearLayout.LayoutParams(-1, (int) (44 * density)));
+        Runnable go = () -> {
+            String p = pw.getText().toString();
+            closeMenu(false);
+            joinNetwork(n, p);
+        };
+        pw.setOnEditorActionListener((v, actionId, event) -> {
+            go.run();
+            return true;
+        });
+        addInputRow(rows, () -> { }, R.drawable.ic_wifi, "Sambung", -1, go);
+        int width = Math.max(btnWifi.getWidth(), (int) (300 * density));
+        showMenu(panel, rows, btnWifi, width, false);
+        pw.requestFocus();
+        android.view.inputmethod.InputMethodManager imm = getSystemService(android.view.inputmethod.InputMethodManager.class);
+        if (imm != null) pw.postDelayed(() -> imm.showSoftInput(pw, 0), 200);
     }
 
 
