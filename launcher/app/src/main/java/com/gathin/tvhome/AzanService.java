@@ -36,6 +36,7 @@ public class AzanService extends Service {
     private static final long SILENT_MS = 60_000;
     private static final long MAX_MS = 10 * 60_000;
     private static final long SCREEN_WAIT_MS = 15_000;
+    private static final long AFTER_AZAN_MS = 1_500;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private MediaPlayer player;
@@ -66,7 +67,7 @@ public class AzanService extends Service {
             AzanState.begin();
         }
         running = true;
-        handler.postDelayed(this::finish, MAX_MS);
+        handler.postDelayed(this::okPressed, MAX_MS);
 
         Prayer prayer = intent == null ? null : Prayer.fromKey(String.valueOf(intent.getStringExtra(AzanScheduler.EXTRA_PRAYER)));
         if (prayer == null) prayer = Prayer.MAGHRIB;
@@ -107,7 +108,7 @@ public class AzanService extends Service {
         File mp3 = prayer == Prayer.SUBUH && subuh != null && subuh.isFile() ? subuh : any;
         if (mp3 == null || !mp3.isFile()) {
             Log.i(TAG, "no azan.mp3: showing the reminder silently");
-            handler.postDelayed(this::finish, SILENT_MS);
+            handler.postDelayed(this::okPressed, SILENT_MS);
             return;
         }
         AudioAttributes attrs = new AudioAttributes.Builder()
@@ -130,17 +131,18 @@ public class AzanService extends Service {
             player = new MediaPlayer();
             player.setAudioAttributes(attrs);
             player.setDataSource(mp3.getAbsolutePath());
-            player.setOnCompletionListener(mp -> finish());
+            // Azan over and nobody pressed OK: a moment's pause, then the screen goes and the film carries on.
+            player.setOnCompletionListener(mp -> handler.postDelayed(this::okPressed, AFTER_AZAN_MS));
             player.setOnErrorListener((mp, what, extra) -> {
                 Log.w(TAG, "player error " + what + "/" + extra);
-                finish();
+                handler.postDelayed(this::okPressed, SILENT_MS);
                 return true;
             });
             player.setOnPreparedListener(MediaPlayer::start);
             player.prepareAsync();
         } catch (Exception e) {
             Log.w(TAG, "cannot play " + mp3 + ": " + e);
-            handler.postDelayed(this::finish, SILENT_MS);
+            handler.postDelayed(this::okPressed, SILENT_MS);
         }
     }
 
