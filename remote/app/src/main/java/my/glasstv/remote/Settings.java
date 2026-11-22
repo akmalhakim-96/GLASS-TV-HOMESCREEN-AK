@@ -12,7 +12,7 @@ final class Settings {
     Integer wallpaperSeconds;
     List<String> dockApps;
     Integer columns;
-    Boolean networkPill, reducedMotion, bismillah;
+    Boolean networkPill, reducedMotion, bismillah, keepScreenOn;
     String backgroundColor;
     String zone, zoneName;
     List<String> azanPrayers;
@@ -31,6 +31,7 @@ final class Settings {
             s.columns = from.columns;
             s.networkPill = from.networkPill;
             s.reducedMotion = from.reducedMotion;
+            s.keepScreenOn = from.keepScreenOn;
             s.backgroundColor = from.backgroundColor;
         } else if (section == PRAYER) {
             s.zone = from.zone;
@@ -59,6 +60,7 @@ final class Settings {
         put(c, "columns", columns);
         put(c, "show_network_pill", networkPill);
         put(c, "reduced_motion", reducedMotion);
+        put(c, "keep_screen_on", keepScreenOn);
         put(c, "bismillah", bismillah);
         put(c, "background_color", backgroundColor);
         put(c, "prayer_zone", zone);

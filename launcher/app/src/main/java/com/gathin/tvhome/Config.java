@@ -70,6 +70,8 @@ final class Config {
     final PrayerSettings prayer;
     /** Bismillah when the TV turns on (BismillahSplash); "bismillah": false turns it off. */
     final boolean bismillah;
+    /** "keep_screen_on": while Home is in front the screen stays on, so no screensaver or sleep over it. */
+    final boolean keepScreenOn;
 
     private Config(List<String> dockApps, List<String> hiddenApps, String liveTvPackage, String liveTvAction,
                    String sourcePanelService, String sourcePanelAction, String inputAction,
@@ -78,9 +80,10 @@ final class Config {
                    boolean showHomeSettingsShortcut, boolean showNetworkPill, boolean showLiveTv,
                    int backgroundColor,
                    File wallpaper, List<File> wallpapers, long wallpaperIntervalMs,
-                   boolean places, int cacheCleanDays, boolean overlayApplied, PrayerSettings prayer, boolean bismillah) {
+                   boolean places, int cacheCleanDays, boolean overlayApplied, PrayerSettings prayer, boolean bismillah, boolean keepScreenOn) {
         this.prayer = prayer;
         this.bismillah = bismillah;
+        this.keepScreenOn = keepScreenOn;
         this.dockApps = Collections.unmodifiableList(dockApps);
         this.hiddenApps = Collections.unmodifiableList(hiddenApps);
         this.liveTvPackage = liveTvPackage;
@@ -180,7 +183,11 @@ final class Config {
         return new Config(dock, hidden, liveTv, liveTvAction, panelService, panelAction, inputAction,
                 Math.max(1, columns), Math.max(0, rowsBelow), shamsi, moduleCards, reducedMotion,
                 vpn, homeSettings, networkPill, liveTvRow, background, wallpaper, wallpapers, wallpaperIntervalMs,
-                places, cacheCleanDays, applied, PrayerSettings.fromJson(json), BismillahSplash.enabled(json));
+                places, cacheCleanDays, applied, PrayerSettings.fromJson(json), BismillahSplash.enabled(json), keepScreenOn(json));
+    }
+
+    static boolean keepScreenOn(JSONObject json) {
+        return json != null && bool(json, "keep_screen_on", false);
     }
 
     /** Reads and parses the overlay; any problem means "no overlay", never a crash on the home screen. */

@@ -17,6 +17,7 @@ public class SectionsTest {
         s.columns = 5;
         s.networkPill = true;
         s.reducedMotion = false;
+        s.keepScreenOn = true;
         s.bismillah = true;
         s.zone = "SGR01";
         s.zoneName = "Shah Alam";
@@ -34,7 +35,7 @@ public class SectionsTest {
 
     @Test
     public void homeOnly() {
-        assertEquals(Set.of("dock_apps", "columns", "show_network_pill", "reduced_motion"),
+        assertEquals(Set.of("dock_apps", "columns", "show_network_pill", "reduced_motion", "keep_screen_on"),
                 Settings.only(Settings.HOME, everything()).changes().keySet());
     }
 

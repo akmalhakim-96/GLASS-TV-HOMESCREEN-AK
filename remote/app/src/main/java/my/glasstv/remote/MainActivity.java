@@ -334,6 +334,7 @@ public class MainActivity extends Activity {
         if (col >= 4 && col <= 8) columns.setSelection(col - 4);
         wifi.setChecked(c.optBoolean("show_network_pill", true));
         reduced.setChecked(c.optBoolean("reduced_motion", reduced.isChecked()));
+        ((Switch) findViewById(R.id.keepOn)).setChecked(c.optBoolean("keep_screen_on", false));
         bismillah.setChecked(c.optBoolean("bismillah", true));
         String z = c.optString("prayer_zone", "");
         List<Zones.Zone> all = Zones.all();
@@ -585,6 +586,7 @@ public class MainActivity extends Activity {
         s.columns = columns.getSelectedItemPosition() + 4;
         s.networkPill = wifi.isChecked();
         s.reducedMotion = reduced.isChecked();
+        s.keepScreenOn = ((Switch) findViewById(R.id.keepOn)).isChecked();
         s.bismillah = bismillah.isChecked();
         Zones.Zone z = Zones.all().get(zone.getSelectedItemPosition());
         s.zone = z.code;

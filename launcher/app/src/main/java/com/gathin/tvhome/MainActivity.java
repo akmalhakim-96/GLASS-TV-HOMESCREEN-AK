@@ -276,6 +276,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else launch.edit().putLong("boot_at", bootAt).apply();
         root.setBackgroundColor(cfg.backgroundColor);
         config = cfg;
+        // Only while Home is in front: other apps keep their own say over the screen.
+        if (cfg.keepScreenOn) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // The first Home after the TV boots opens with Bismillah; later screen-ons bring Home back with it.
         if (cfg.bismillah && !tilesAnimatedOnce) showBismillah();
         if (cfg.bismillah) {
