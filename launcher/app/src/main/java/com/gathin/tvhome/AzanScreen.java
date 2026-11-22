@@ -29,13 +29,24 @@ final class AzanScreen {
 
     private final WindowManager wm;
     private final FrameLayout root;
+    private final View back, dim, middle, island;
+    private final boolean calm;
+    private final float dp;
     private Bitmap wallpaper;
     private boolean shown;
 
-    private AzanScreen(WindowManager wm, FrameLayout root, Bitmap wallpaper) {
+    private AzanScreen(WindowManager wm, FrameLayout root, View back, FrameLayout content, Bitmap wallpaper,
+                       boolean calm, float dp) {
         this.wm = wm;
         this.root = root;
+        this.back = back;
+        // AzanOverlay.content: the darkening layer, the words, the island, in that order.
+        this.dim = content.getChildAt(0);
+        this.middle = content.getChildAt(1);
+        this.island = content.getChildAt(2);
         this.wallpaper = wallpaper;
+        this.calm = calm;
+        this.dp = dp;
     }
 
     /** OK released lifts the screen; volume keys work as usual; every other key stays here. */
@@ -48,20 +59,24 @@ final class AzanScreen {
     }
 
     /** Null when the TV has not allowed drawing over apps; the caller then uses AzanActivity. */
-    static AzanScreen show(Context c, PrayerSettings s, Prayer prayer, String time, Runnable onOk) {
+    static AzanScreen show(Context c, PrayerSettings s, Prayer prayer, String time, boolean reducedMotion, Runnable onOk) {
         if (!Settings.canDrawOverlays(c)) return null;
         WindowManager wm = (WindowManager) c.getSystemService(Context.WINDOW_SERVICE);
         FrameLayout root = new FrameLayout(c);
-        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+        // The picture on its own layer, so it can fade in over the film and settle.
+        FrameLayout back = new FrameLayout(c);
+        back.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0xFF1C1A17, 0xFF0B0A09, 0xFF050505}));
         Bitmap pic = decode(new File(Config.dir(c), AzanActivity.WALLPAPER));
         if (pic != null) {
             ImageView v = new ImageView(c);
             v.setScaleType(ImageView.ScaleType.CENTER_CROP);
             v.setImageBitmap(pic);
-            root.addView(v, new FrameLayout.LayoutParams(-1, -1));
+            back.addView(v, new FrameLayout.LayoutParams(-1, -1));
         }
-        root.addView(AzanOverlay.content(c, s, prayer, time), new FrameLayout.LayoutParams(-1, -1));
+        root.addView(back, new FrameLayout.LayoutParams(-1, -1));
+        FrameLayout content = AzanOverlay.content(c, s, prayer, time);
+        root.addView(content, new FrameLayout.LayoutParams(-1, -1));
         root.setFocusable(true);
         root.setFocusableInTouchMode(true);
         root.setOnKeyListener((v, keyCode, event) -> {
@@ -74,18 +89,19 @@ final class AzanScreen {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_FULLSCREEN
                         | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                PixelFormat.OPAQUE);
+                PixelFormat.TRANSLUCENT);   // see-through while it fades in over the film
+        AzanScreen screen = new AzanScreen(wm, root, back, content, pic, reducedMotion,
+                c.getResources().getDisplayMetrics().density);
         try {
-            root.setAlpha(0f);
+            screen.prepareEnter();
             wm.addView(root, wp);
             root.requestFocus();
-            root.animate().alpha(1f).setDuration(300).start();
+            screen.enter();
         } catch (RuntimeException e) {
             Log.w(TAG, "azan window refused: " + e);
             if (pic != null) pic.recycle();
             return null;
         }
-        AzanScreen screen = new AzanScreen(wm, root, pic);
         screen.shown = true;
         return screen;
     }
@@ -103,11 +119,51 @@ final class AzanScreen {
         return BitmapFactory.decodeFile(f.getAbsolutePath(), d);
     }
 
+    // ---- entrance and exit ------------------------------------------------------------------------
+
+    private static final android.view.animation.Interpolator EASE =
+            new android.view.animation.DecelerateInterpolator(2f);
+
+    private void prepareEnter() {
+        back.setAlpha(0f);
+        dim.setAlpha(0f);
+        middle.setAlpha(0f);
+        island.setAlpha(0f);
+        if (calm) return;
+        back.setScaleX(1.06f);
+        back.setScaleY(1.06f);
+        middle.setTranslationY(24 * dp);
+        island.setTranslationY(-36 * dp);
+    }
+
+    /**
+     * The picture fades in over the film and settles from slightly larger, the darkening follows, the
+     * glass island glides down into place and the words rise in. Reduced motion: the same, fades only.
+     */
+    private void enter() {
+        if (calm) {
+            // Reduced motion: the same order, fades only (no scaling or sliding), still unhurried.
+            back.animate().alpha(1f).setDuration(500).setInterpolator(EASE).start();
+            dim.animate().alpha(1f).setStartDelay(100).setDuration(400).start();
+            island.animate().alpha(1f).setStartDelay(250).setDuration(400).start();
+            middle.animate().alpha(1f).setStartDelay(400).setDuration(450).start();
+            return;
+        }
+        back.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(900).setInterpolator(EASE).start();
+        dim.animate().alpha(1f).setStartDelay(150).setDuration(700).setInterpolator(EASE).start();
+        island.animate().alpha(1f).translationY(0f).setStartDelay(350).setDuration(600).setInterpolator(EASE).start();
+        middle.animate().alpha(1f).translationY(0f).setStartDelay(550).setDuration(700).setInterpolator(EASE).start();
+    }
+
     void dismiss() {
         if (!shown) return;
         shown = false;
-        root.animate().cancel();
-        root.animate().alpha(0f).setDuration(200).withEndAction(() -> {
+        for (View v : new View[]{back, dim, middle, island}) v.animate().cancel();
+        long words = calm ? 200 : 250, picture = calm ? 350 : 450;
+        middle.animate().alpha(0f).setStartDelay(0).setDuration(words).start();
+        island.animate().alpha(0f).translationY(calm ? 0f : -24 * dp).setStartDelay(0).setDuration(words).start();
+        dim.animate().alpha(0f).setStartDelay(words / 2).setDuration(picture).start();
+        back.animate().alpha(0f).setStartDelay(words / 2).setDuration(picture).withEndAction(() -> {
             try {
                 wm.removeView(root);
             } catch (RuntimeException ignored) {

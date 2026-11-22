@@ -71,7 +71,8 @@ public class AzanService extends Service {
         // Over whatever is playing, which stays where it is: OK lifts the window and the film is there.
         String time = PrayerBar.clock(java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), PrayerTimes.MY)
                 .toLocalTime(), android.text.format.DateFormat.is24HourFormat(this));
-        screen = AzanScreen.show(this, Config.load(this).prayer, prayer, time, () -> handler.post(this::okPressed));
+        Config cfg = Config.load(this);
+        screen = AzanScreen.show(this, cfg.prayer, prayer, time, cfg.reducedMotion, () -> handler.post(this::okPressed));
         if (screen != null) {
             overlayUp = true;
             AzanState.setScreen(true);
