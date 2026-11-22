@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.KeyEvent;
 
 import com.gathin.tvhome.PrayerTimes.Prayer;
 
@@ -42,6 +43,8 @@ public class AzanService extends Service {
     private AudioFocusRequest focus;
     private boolean running;
     private AzanScreen screen;
+    /** Something was playing when the azan began: it got a Pause, and gets Play back after OK. */
+    private boolean pausedOthers;
     /** The floating azan screen is up (Home must not raise AzanActivity over it). */
     static volatile boolean overlayUp;
 
@@ -112,6 +115,12 @@ public class AzanService extends Service {
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build();
         audio = (AudioManager) getSystemService(AUDIO_SERVICE);
+        // Some apps ignore losing audio focus and keep playing under the azan: press Pause for them,
+        // as the remote's ⏸ would. Only when something is playing, so OK can press Play back.
+        if (audio != null && audio.isMusicActive()) {
+            mediaKey(KeyEvent.KEYCODE_MEDIA_PAUSE);
+            pausedOthers = true;
+        }
         focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(attrs)
                 .setOnAudioFocusChangeListener(change -> { })
@@ -139,6 +148,18 @@ public class AzanService extends Service {
     private void okPressed() {
         clearScreen();
         finish();
+        if (pausedOthers) {
+            pausedOthers = false;
+            // After the azan has let go of the sound, so the film's player takes it back.
+            new Handler(Looper.getMainLooper()).postDelayed(() -> mediaKey(KeyEvent.KEYCODE_MEDIA_PLAY), 400);
+        }
+    }
+
+    private void mediaKey(int code) {
+        AudioManager am = audio != null ? audio : (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (am == null) return;
+        am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
+        am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, code));
     }
 
     private void clearScreen() {

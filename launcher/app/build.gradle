@@ -10,8 +10,8 @@ android {
         applicationId 'com.gathin.tvhome'
         minSdk 26
         targetSdk 34
-        versionCode 13
-        versionName '2.3-solat13'
+        versionCode 14
+        versionName '2.3-solat14'
     }
 
     buildTypes {
