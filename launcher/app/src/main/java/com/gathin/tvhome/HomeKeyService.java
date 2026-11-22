@@ -58,6 +58,10 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        // Remember the app in front, so OK on the azan screen can go back to it.
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            AzanState.noteForeground(event.getPackageName(), event.getClassName());
+        }
     }
 
     @Override

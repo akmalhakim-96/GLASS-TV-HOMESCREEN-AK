@@ -9,6 +9,7 @@ import static android.view.KeyEvent.KEYCODE_HOME;
 import static android.view.KeyEvent.KEYCODE_VOLUME_UP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,5 +75,23 @@ public class AzanStateTest {
         assertFalse(AzanState.swallowNav(KEYCODE_VOLUME_UP));
         AzanState.end();
         assertFalse(AzanState.swallowNav(KEYCODE_BACK));
+    }
+
+    @Test
+    public void remembersTheAppToReturnTo() {
+        AzanState.noteForeground("com.netflix.ninja", "com.netflix.ninja.MainActivity");
+        AzanState.noteForeground("com.gathin.tvhome", "com.gathin.tvhome.AzanActivity");   // the azan screen itself
+        AzanState.noteForeground("com.android.systemui", "x");                             // volume bar and the like
+        AzanState.noteForeground("android", "x");
+        AzanState.noteForeground(null, null);
+        assertEquals("com.netflix.ninja", AzanState.returnTo());
+    }
+
+    @Test
+    public void homeMeansNoAppToReturnTo() {
+        AzanState.noteForeground("com.google.android.youtube.tv", "y");
+        AzanState.noteForeground("com.gathin.tvhome", "com.gathin.tvhome.MainActivity");   // back on Glass TV Home
+        AzanState.noteForeground("com.gathin.tvhome", "com.gathin.tvhome.AzanActivity");
+        assertNull(AzanState.returnTo());
     }
 }

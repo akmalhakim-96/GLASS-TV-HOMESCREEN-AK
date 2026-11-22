@@ -15,7 +15,25 @@ final class AzanState {
     /** The azan screen is showing (AzanActivity), so Home can bring it back to the front. */
     private static boolean screen;
 
+    /** The app in front before the azan screen (null: Glass TV's Home), for OK to go back to. */
+    private static String lastApp;
+
     private AzanState() {}
+
+    /** From HomeKeyService's window events: which app is in front. */
+    static synchronized void noteForeground(CharSequence pkg, CharSequence cls) {
+        if (pkg == null) return;
+        String p = pkg.toString();
+        if (p.equals("com.gathin.tvhome")) {
+            if (cls != null && cls.toString().endsWith("AzanActivity")) return;   // the azan screen itself
+            lastApp = null;   // Home
+            return;
+        }
+        if (p.equals("android") || p.equals("com.android.systemui")) return;   // dialogs, volume bar
+        lastApp = p;
+    }
+
+    static synchronized String returnTo() { return lastApp; }
 
     static synchronized boolean active() { return active; }
 

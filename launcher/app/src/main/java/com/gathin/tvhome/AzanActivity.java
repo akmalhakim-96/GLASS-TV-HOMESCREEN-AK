@@ -57,7 +57,7 @@ public class AzanActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         setContentView(root);
         AzanState.setScreen(true);
-        AzanState.setStopper(() -> runOnUiThread(this::finish));
+        AzanState.setStopper(() -> runOnUiThread(this::backToPrevious));
     }
 
     /** One picture at most screen size, decoded once for this screen and dropped with it. */
@@ -86,10 +86,28 @@ public class AzanActivity extends Activity {
         // OK returns to what was on screen; HomeKeyService usually takes it first and does the same.
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
                 || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-            finish();
+            backToPrevious();
             return true;
         }
         return super.onKeyUp(keyCode, event);
+    }
+
+    /**
+     * Closes the azan screen and brings back the app that was in front (Netflix stays where it paused).
+     * Android would otherwise show Home: a screen opened from a service returns there when it closes.
+     */
+    private void backToPrevious() {
+        String pkg = AzanState.returnTo();
+        finish();
+        if (pkg == null) return;
+        Intent back = getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
+        if (back == null) back = getPackageManager().getLaunchIntentForPackage(pkg);
+        if (back == null) return;
+        try {
+            // The app's own launch intent brings its existing task to the front, as it was.
+            startActivity(back.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException ignored) {
+        }
     }
 
     @Override
