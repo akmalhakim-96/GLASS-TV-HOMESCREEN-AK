@@ -65,4 +65,13 @@ public class TvListTest {
         assertEquals("1 berjaya, 1 gagal", b.headline());
         assertEquals("✓ Ruang Tamu\n✗ Bilik 1 — TV tidak dijumpai. Pastikan TV hidup…", b.details());
     }
+
+    @Test
+    public void chipWords() {
+        assertEquals("Terkini", TvStatus.chip(TvStatus.of(17, 17)));
+        assertEquals("Kemas kini", TvStatus.chip(TvStatus.of(12, 17)));
+        assertEquals("Belum pasang", TvStatus.chip(TvStatus.of(-1, 17)));
+        assertEquals("Allow di TV", TvStatus.chip(TvStatus.notAllowed()));
+        assertEquals("Tiada", TvStatus.chip(TvStatus.unreachable()));
+    }
 }

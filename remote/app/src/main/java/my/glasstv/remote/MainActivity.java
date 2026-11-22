@@ -51,13 +51,13 @@ public class MainActivity extends Activity {
     /** The owner's TVs; the main one fills the form and answers Uji/Semak azan. */
     private TvList tvs;
     private String mainIp = "";
-    private final java.util.Map<String, String> tvStatus = new java.util.HashMap<>();
+    private final java.util.Map<String, TvStatus> tvStatus = new java.util.HashMap<>();
     private LinearLayout tvRows;
     private RadioButton places, own;
     private Switch darken, fit, wifi, reduced, bismillah;
     private Spinner interval, columns, zone, dim;
     private LinearLayout thumbs, ownBox;
-    private final CheckBox[] prayers = new CheckBox[5];
+    private final android.widget.CompoundButton[] prayers = new android.widget.CompoundButton[5];
     private Button send;
 
     private final List<Uri> photos = new ArrayList<>();
@@ -121,13 +121,30 @@ public class MainActivity extends Activity {
         zone.setAdapter(adapter(zoneLabels.toArray(new String[0])));
         zone.setSelection(sgr01);
         LinearLayout prayerBox = findViewById(R.id.prayers);
+        String[] prayerIcon = {"🌅", "☀️", "🌤️", "🌇", "🌙"};
+        float dpx = getResources().getDisplayMetrics().density;
         for (int i = 0; i < 5; i++) {
-            prayers[i] = new CheckBox(this);
-            prayers[i].setText(PRAYER_LABEL[i]);
-            prayers[i].setTextColor(0xFFFFFFFF);
-            prayers[i].setChecked(true);
-            prayerBox.addView(prayers[i]);
+            Switch sw = new Switch(this);
+            sw.setText(prayerIcon[i] + "   " + PRAYER_LABEL[i]);
+            sw.setTextColor(0xFF1E2340);
+            sw.setTextSize(15);
+            sw.setChecked(true);
+            sw.setMinHeight(Math.round(46 * dpx));
+            prayers[i] = sw;
+            prayerBox.addView(sw);
         }
+        zone.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int pos, long id) {
+                Zones.Zone z = Zones.all().get(pos);
+                ((TextView) findViewById(R.id.solatSub)).setText(z.code + " · " + z.areas);
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
+        setupTabs();
         places.setChecked(true);
         ownBox.setVisibility(View.GONE);
         ((android.widget.RadioGroup) findViewById(R.id.wallMode)).setOnCheckedChangeListener(
@@ -234,40 +251,72 @@ public class MainActivity extends Activity {
         renderTvs();
     }
 
-    /** One row per TV: tick, name, address and its last known state; the main TV is highlighted. */
+    /** One row per TV: icon, name, address, a coloured state label and the tick; the main TV is outlined. */
     private void renderTvs() {
         tvRows.removeAllViews();
         float dp = getResources().getDisplayMetrics().density;
+        int latest = 0, old = 0;
         for (TvList.Entry e : tvs.all()) {
+            TvStatus st = tvStatus.get(e.ip);
+            if (st != null && st.kind == TvStatus.Kind.LATEST) latest++;
+            if (st != null && (st.kind == TvStatus.Kind.OUTDATED || st.kind == TvStatus.Kind.NOT_INSTALLED)) old++;
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            row.setBackgroundResource(R.drawable.row_bg);
+            row.setBackgroundResource(R.drawable.row_main);
             row.setActivated(e.ip.equals(host()));
             int pad = Math.round(8 * dp);
-            row.setPadding(pad / 2, pad, pad, pad);
+            row.setPadding(pad, pad, pad / 2, pad);
+
+            TextView icon = new TextView(this);
+            icon.setText("📺");
+            icon.setTextSize(18);
+            icon.setGravity(android.view.Gravity.CENTER);
+            icon.setBackgroundResource(R.drawable.icon_box);
+            row.addView(icon, new LinearLayout.LayoutParams(Math.round(40 * dp), Math.round(40 * dp)));
+
+            LinearLayout words = new LinearLayout(this);
+            words.setOrientation(LinearLayout.VERTICAL);
+            words.setPadding(Math.round(12 * dp), 0, Math.round(6 * dp), 0);
+            TextView name = new TextView(this);
+            name.setText(e.name + (e.ip.equals(host()) ? "  ★" : ""));
+            name.setTextColor(0xFF1E2340);
+            name.setTextSize(14.5f);
+            name.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            name.setSingleLine(true);
+            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            words.addView(name);
+            TextView sub = new TextView(this);
+            sub.setText(e.ip + (e.ip.equals(host()) ? " · TV utama" : ""));
+            sub.setTextColor(0xFF8A90A8);
+            sub.setTextSize(11.5f);
+            words.addView(sub);
+            row.addView(words, new LinearLayout.LayoutParams(0, -2, 1f));
+
+            if (st != null) {
+                TextView chip = new TextView(this);
+                int[] col = TvStatus.chipColors(st);
+                chip.setText(TvStatus.chip(st));
+                chip.setTextColor(col[0]);
+                chip.setTextSize(10.5f);
+                chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+                bg.setColor(col[1]);
+                bg.setCornerRadius(20 * dp);
+                chip.setBackground(bg);
+                chip.setPadding(Math.round(9 * dp), Math.round(4 * dp), Math.round(9 * dp), Math.round(4 * dp));
+                row.addView(chip);
+            }
             CheckBox tick = new CheckBox(this);
             tick.setChecked(e.selected);
             tick.setOnCheckedChangeListener((b, on) -> {
                 tvs.setSelected(e.ip, on);
                 prefs.edit().putString("tvs", tvs.toJson()).apply();
+                updateSendLabel();
+                ((TextView) findViewById(R.id.selectAll)).setText(
+                        tvs.selectedIps().size() < tvs.all().size() ? "Pilih semua" : "Nyahpilih");
             });
             row.addView(tick);
-            LinearLayout words = new LinearLayout(this);
-            words.setOrientation(LinearLayout.VERTICAL);
-            TextView name = new TextView(this);
-            name.setText(e.name + (e.ip.equals(host()) ? "  · utama" : ""));
-            name.setTextColor(0xFFFFFFFF);
-            name.setTextSize(15);
-            name.setTypeface(name.getTypeface(), android.graphics.Typeface.BOLD);
-            words.addView(name);
-            TextView sub = new TextView(this);
-            String st = tvStatus.get(e.ip);
-            sub.setText(e.ip + (st == null ? "" : "   " + st));
-            sub.setTextColor(0xA6FFFFFF);
-            sub.setTextSize(12.5f);
-            words.addView(sub);
-            row.addView(words, new LinearLayout.LayoutParams(0, -2, 1f));
             row.setOnClickListener(v -> {
                 mainIp = e.ip;
                 filled = false;
@@ -279,12 +328,54 @@ public class MainActivity extends Activity {
                 return true;
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-            lp.bottomMargin = Math.round(6 * dp);
+            lp.topMargin = Math.round(4 * dp);
             tvRows.addView(row, lp);
         }
         findViewById(R.id.tvEmpty).setVisibility(tvs.all().isEmpty() ? View.VISIBLE : View.GONE);
-        ((Button) findViewById(R.id.selectAll)).setText(
-                tvs.selectedIps().size() < tvs.all().size() ? "Pilih semua" : "Nyahpilih semua");
+        ((TextView) findViewById(R.id.selectAll)).setText(
+                tvs.selectedIps().size() < tvs.all().size() ? "Pilih semua" : "Nyahpilih");
+        ((TextView) findViewById(R.id.statTotal)).setText(stat(tvs.all().size(), "TV disimpan"));
+        ((TextView) findViewById(R.id.statLatest)).setText(stat(latest, "Terkini"));
+        ((TextView) findViewById(R.id.statOld)).setText(stat(old, "Perlu kemas kini"));
+        updateSendLabel();
+    }
+
+    private static CharSequence stat(int n, String what) {
+        android.text.SpannableString s = new android.text.SpannableString(n + "\n" + what);
+        int end = String.valueOf(n).length();
+        s.setSpan(new android.text.style.RelativeSizeSpan(1.75f), 0, end, 0);
+        s.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, end, 0);
+        return s;
+    }
+
+    private void updateSendLabel() {
+        int n = tvs.selectedIps().size();
+        ((Button) findViewById(R.id.send)).setText(n == 0 ? "Tanda TV untuk hantar" : "Hantar semua ke " + n + " TV");
+    }
+
+    // ---- tabs --------------------------------------------------------------------------------------
+
+    private static final int[] TABS = {R.id.tabTv, R.id.tabGambar, R.id.tabHome, R.id.tabSolat};
+    private static final int[] NAVS = {R.id.navTv, R.id.navGambar, R.id.navHome, R.id.navSolat};
+    private static final int[] TAB_COLOR = {0xFF4F6BFF, 0xFF12B886, 0xFFFF7A3C, 0xFFFF5A5F};
+
+    private void setupTabs() {
+        for (int i = 0; i < NAVS.length; i++) {
+            final int tab = i;
+            findViewById(NAVS[i]).setOnClickListener(v -> showTab(tab));
+        }
+        showTab(prefs.getInt("tab", 0));
+    }
+
+    private void showTab(int tab) {
+        for (int i = 0; i < TABS.length; i++) {
+            findViewById(TABS[i]).setVisibility(i == tab ? View.VISIBLE : View.GONE);
+            TextView nav = findViewById(NAVS[i]);
+            nav.setTextColor(i == tab ? TAB_COLOR[i] : 0xFF9AA0B8);
+            nav.setTypeface(i == tab ? android.graphics.Typeface.DEFAULT_BOLD : android.graphics.Typeface.DEFAULT);
+        }
+        getWindow().setStatusBarColor(TAB_COLOR[tab]);
+        prefs.edit().putInt("tab", tab).apply();
     }
 
     private void tvMenu(TvList.Entry e) {
@@ -339,13 +430,13 @@ public class MainActivity extends Activity {
             for (TvList.Entry e : all) {
                 final int n = ++i;
                 runOnUiThread(() -> status.setText("Menyemak " + n + "/" + all.size() + ": " + e.name + "…"));
-                String label;
+                TvStatus label;
                 try (Tv tv = Tv.connect(this, e.ip)) {
-                    label = TvStatus.label(TvStatus.of(TvVersion.parse(tv.shell(TvVersion.QUERY)), TvVersion.BUNDLED));
+                    label = TvStatus.of(TvVersion.parse(tv.shell(TvVersion.QUERY)), TvVersion.BUNDLED);
                 } catch (Exception ex) {
-                    label = TvStatus.label(Messages.ALLOW.equals(Messages.forError(ex)) ? TvStatus.notAllowed() : TvStatus.unreachable());
+                    label = Messages.ALLOW.equals(Messages.forError(ex)) ? TvStatus.notAllowed() : TvStatus.unreachable();
                 }
-                final String l = label;
+                final TvStatus l = label;
                 runOnUiThread(() -> {
                     tvStatus.put(e.ip, l);
                     renderTvs();
@@ -450,7 +541,7 @@ public class MainActivity extends Activity {
                 int glass = TvVersion.parse(tv.shell(TvVersion.QUERY));
                 prefs.edit().putString("ip", h).apply();
                 runOnUiThread(() -> {
-                    tvStatus.put(h, TvStatus.label(TvStatus.of(glass, TvVersion.BUNDLED)));
+                    tvStatus.put(h, TvStatus.of(glass, TvVersion.BUNDLED));
                     renderTvs();
                     showDetected(detected, release);
                     if (glass < 0) {
@@ -539,7 +630,7 @@ public class MainActivity extends Activity {
                 String line = HomeSetup.run(this, h, step -> runOnUiThread(() -> status.setText(prefix + step)));
                 batch.add(label, line);
                 if (HomeSetup.lastReport != null) reports.append("\n\n— ").append(label).append(" —\n").append(HomeSetup.lastReport);
-                if (line.startsWith("Siap")) runOnUiThread(() -> tvStatus.put(h, TvStatus.label(TvStatus.of(TvVersion.BUNDLED, TvVersion.BUNDLED))));
+                if (line.startsWith("Siap")) runOnUiThread(() -> tvStatus.put(h, TvStatus.of(TvVersion.BUNDLED, TvVersion.BUNDLED)));
             }
             runOnUiThread(() -> {
                 findViewById(R.id.setupHome).setEnabled(true);
