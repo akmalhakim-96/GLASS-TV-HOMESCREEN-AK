@@ -301,10 +301,17 @@ public class MainActivity extends Activity {
                         tv.shell("getprop ro.product.model"),
                         tv.shell("cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME"));
                 String release = tv.shell("getprop ro.build.version.release");
+                int glass = TvVersion.parse(tv.shell(TvVersion.QUERY));
                 prefs.edit().putString("ip", h).apply();
                 runOnUiThread(() -> {
                     showDetected(detected, release);
-                    status.setText("Bersambung ✓ " + h);
+                    if (glass < 0) {
+                        status.setText("Bersambung ✓ " + h + ". Glass TV belum dipasang: tekan Pasang & jadikan Home.");
+                    } else if (TvVersion.needsUpdate(glass)) {
+                        status.setText("Bersambung ✓ " + h + ". Glass TV di TV versi lama (" + glass + "): tekan Pasang & jadikan Home untuk kemas kini ke versi " + TvVersion.BUNDLED + ".");
+                    } else {
+                        status.setText("Bersambung ✓ " + h + " · Glass TV versi " + glass + " (terkini)");
+                    }
                     tvHasPhotos = onTv > 0;
                     fill(cfg);
                     filled = true;

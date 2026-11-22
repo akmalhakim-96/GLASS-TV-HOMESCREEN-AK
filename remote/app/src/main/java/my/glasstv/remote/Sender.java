@@ -67,6 +67,14 @@ final class Sender {
 
             p.step("Memulakan semula Home…");
             tv.shell(TvCommands.restartHome());
+            // Glass TV's remote-key service (Home on Xiaomi remotes, OK stops the azan): on again if an
+            // older version of this app switched it off with a force-stop.
+            String services = tv.shell("settings get secure enabled_accessibility_services");
+            String wanted = HomeSetup.withHomeKeyService(services);
+            if (!wanted.equals(services.trim())) {
+                tv.shell("settings put secure enabled_accessibility_services " + wanted);
+                tv.shell("settings put secure accessibility_enabled 1");
+            }
             String done = "Siap ✓";
             if (sent > 0) done += " " + sent + " gambar dihantar";
             if (skipped > 0) done += " (" + skipped + " gambar tidak dapat dibaca)";

@@ -68,7 +68,8 @@ public class HelpersTest {
     public void swapIsAtomicPair() {
         String d = TvCommands.DIR;
         assertEquals("rm -rf " + d + "/wallpapers; mv " + d + "/wallpapers.new " + d + "/wallpapers", TvCommands.swapWallpapers());
-        assertEquals("am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity", TvCommands.restartHome());
+        // No force-stop: it would switch off Glass TV's remote-key service (Home, and OK during the azan).
+        assertEquals("am broadcast -n com.gathin.tvhome/.AzanReceiver -a com.gathin.tvhome.RELOAD", TvCommands.restartHome());
     }
 
     @Test
@@ -101,5 +102,19 @@ public class HelpersTest {
         for (String part : new String[]{"dumpsys alarm", "AzanActivity", "SYSTEM_ALERT_WINDOW", "stopped=", "TvHome.Azan", "date"}) {
             assertTrue(part, TvCommands.AZAN_REPORT.contains(part));
         }
+    }
+
+    @Test
+    public void tvGlassVersionFromDumpsys() {
+        assertEquals(6, TvVersion.parse("    versionCode=6 minSdk=26 targetSdk=34\n    versionName=2.3-solat6\n"));
+        assertEquals(4, TvVersion.parse("versionCode=4 minSdk=26"));
+        assertEquals(-1, TvVersion.parse(""));
+    }
+
+    @Test
+    public void oldGlassTvNeedsUpdate() {
+        assertTrue(TvVersion.needsUpdate(4));
+        assertFalse(TvVersion.needsUpdate(TvVersion.BUNDLED));
+        assertFalse(TvVersion.needsUpdate(-1));   // not installed: a different message
     }
 }

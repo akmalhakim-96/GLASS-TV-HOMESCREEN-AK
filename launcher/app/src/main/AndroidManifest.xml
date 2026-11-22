@@ -143,6 +143,7 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="com.gathin.tvhome.AZAN_TEST" />
+                <action android:name="com.gathin.tvhome.RELOAD" />
             </intent-filter>
         </receiver>
     </application>

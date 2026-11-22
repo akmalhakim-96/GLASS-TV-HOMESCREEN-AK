@@ -18,6 +18,12 @@ import java.time.ZonedDateTime;
 public class AzanReceiver extends BroadcastReceiver {
     private static final String TAG = "TvHome.Azan";
     static final String ACTION_TEST = "com.gathin.tvhome.AZAN_TEST";
+    /**
+     * Read config.json again without a force-stop (the phone sends this after HANTAR). A force-stop
+     * would also switch off HomeKeyService, Android's rule for stopped packages, and with it the
+     * remote's Home button and OK-stops-azan.
+     */
+    static final String ACTION_RELOAD = "com.gathin.tvhome.RELOAD";
     /** AzanService is started by name so this receiver stays independent of it. */
     static final String SERVICE = "com.gathin.tvhome.AzanService";
 
@@ -29,6 +35,9 @@ public class AzanReceiver extends BroadcastReceiver {
             String prayer = intent.getStringExtra(AzanScheduler.EXTRA_PRAYER);
             if (prayer != null && AzanScheduler.shouldPlay(at, System.currentTimeMillis())) play(c, prayer, at);
             else Log.i(TAG, "skipped late or empty alarm for " + prayer);
+        } else if (ACTION_RELOAD.equals(action)) {
+            c.startActivity(new Intent(c, MainActivity.class).putExtra(MainActivity.EXTRA_RELOAD, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } else if (ACTION_TEST.equals(action)) {
             PrayerSettings s = Config.load(c).prayer;
             PrayerTimes t = s.enabled() ? PrayerStore.load(c, s.zone) : null;

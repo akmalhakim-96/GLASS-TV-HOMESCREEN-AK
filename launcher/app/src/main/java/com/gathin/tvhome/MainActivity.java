@@ -185,6 +185,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int prayerTicks;
     /** Bismillah when the TV turns on: after boot, and on every screen-on while Home's process lives. */
     static final String EXTRA_BISMILLAH = "com.gathin.tvhome.BISMILLAH";
+    /** Start again with the new config.json (AzanReceiver.ACTION_RELOAD). */
+    static final String EXTRA_RELOAD = "com.gathin.tvhome.RELOAD";
     private BismillahSplash bismillah;
     private BroadcastReceiver screenOn;
     /** Pictures of places are on (see PlaceWallpapers); they are dimmed behind the tiles. */
@@ -670,6 +672,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (intent != null && intent.getBooleanExtra(EXTRA_RELOAD, false)) {
+            recreate();   // onCreate reads config.json again and sets the next azan
+            return;
+        }
         if (intent != null && intent.getBooleanExtra(EXTRA_BISMILLAH, false)) {
             showBismillah();
             return;

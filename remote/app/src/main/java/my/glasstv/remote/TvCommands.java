@@ -30,7 +30,8 @@ final class TvCommands {
 
     static String clearWallpapers() { return "rm -rf " + DIR + "/wallpapers " + DIR + "/wallpapers.new"; }
 
-    static String restartHome() { return "am force-stop " + PKG + "; am start -n " + PKG + "/.MainActivity"; }
+    /** Glass TV reads config.json again. No force-stop: it would switch off the remote-key service. */
+    static String restartHome() { return "am broadcast -n " + PKG + "/.AzanReceiver -a " + PKG + ".RELOAD"; }
 
     static String readConfig() { return "cat " + DIR + "/config.json 2>/dev/null"; }
 
