@@ -54,6 +54,11 @@ final class TvCommands {
     static final String GRANT_FILES = "appops set " + PKG + " MANAGE_EXTERNAL_STORAGE allow; "
             + "pm grant " + PKG + " android.permission.READ_EXTERNAL_STORAGE 2>/dev/null; true";
 
+    /** Only files for Glass TV's own folder go through the inbox; anything else (the APK) is pushed as is. */
+    static boolean viaInbox(String remote) {
+        return remote.startsWith(DIR + "/");
+    }
+
     /** Where a file meant for Glass TV's folder goes in the inbox; wallpapers.new is simply wallpapers there. */
     static String inboxPath(String remote) {
         String rel = remote.startsWith(DIR + "/") ? remote.substring(DIR.length() + 1) : remote;

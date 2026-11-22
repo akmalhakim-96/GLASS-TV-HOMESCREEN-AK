@@ -83,7 +83,7 @@ final class Tv implements Closeable {
      * app's folder) into /data/local/tmp and copied into place by the TV's own shell.
      */
     void push(File f, String remotePath) throws IOException {
-        if (usesInbox()) {
+        if (TvCommands.viaInbox(remotePath) && usesInbox()) {
             String in = TvCommands.inboxPath(remotePath);
             shell("mkdir -p '" + in.substring(0, in.lastIndexOf('/')) + "'");
             remotePath = in;

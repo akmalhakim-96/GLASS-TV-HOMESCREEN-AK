@@ -141,7 +141,7 @@ final class HomeSetup {
             }
             tv.push(apk, "/data/local/tmp/tvhome.apk");
             apk.delete();
-            String installed = tv.shell("pm install -r /data/local/tmp/tvhome.apk; rm -f /data/local/tmp/tvhome.apk");
+            String installed = tv.shell("pm install -r /data/local/tmp/tvhome.apk 2>&1; rm -f /data/local/tmp/tvhome.apk");
             if (!installed.contains("Success")) {
                 return "Pemasangan gagal (" + lastLine(installed) + "). Home asal tidak diubah.";
             }
@@ -149,6 +149,7 @@ final class HomeSetup {
                 tv.shell("appops set " + PKG + " SYSTEM_ALERT_WINDOW allow");
                 tv.shell(GRANT_LOCATION);
                 tv.shell(TvCommands.GRANT_FILES);   // the shared inbox, for TVs that refuse writes into its folder
+                tv.shell("sleep 2");   // Android 11+ restarts the app for that access: let it, before the health check
                 tv.shell("am start -W -n " + COMPONENT);
                 p.step("Memastikan Glass TV berjalan…");
                 health[0] = tv.shell(HEALTH);

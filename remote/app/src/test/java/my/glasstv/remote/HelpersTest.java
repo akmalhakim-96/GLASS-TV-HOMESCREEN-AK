@@ -142,4 +142,10 @@ public class HelpersTest {
             assertTrue(part, TvCommands.AZAN_REPORT.contains(part));
         }
     }
+
+    @Test
+    public void onlyGlassTvFilesGoThroughTheInbox() {
+        assertTrue(TvCommands.viaInbox(TvCommands.DIR + "/config.json"));
+        assertFalse(TvCommands.viaInbox("/data/local/tmp/tvhome.apk"));   // the APK for pm install stays put
+    }
 }
