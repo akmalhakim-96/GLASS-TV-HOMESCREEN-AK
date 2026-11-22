@@ -78,6 +78,8 @@ final class HomeSetup {
                 }
             }
             if (found != null) return found;
+            // No stock launcher left but Glass TV is here: an update, nothing to disable.
+            if (claimants.contains(PKG + "/")) return NONE;
         }
         throw new SetupException("Home TV sekarang ialah " + pkg + ", yang tidak dikenali. Tiada apa yang diubah.");
     }

@@ -86,4 +86,11 @@ public class HomeSetupTest {
         assertTrue(HomeSetup.HEALTH.contains("mResumedActivity"));
         assertTrue(HomeSetup.HEALTH.contains("for i in 1 2 3 4 5"));
     }
+
+    @Test
+    public void chooserWithGlassTvAlreadyThereIsAnUpdate() throws Exception {
+        // Glass TV installed and the stock launcher already off: updating needs nothing disabled.
+        assertEquals(HomeSetup.NONE, HomeSetup.stockLauncher("android",
+                "com.gathin.tvhome/.MainActivity\ncom.duokan.factorytest/.Home\n"));
+    }
 }
