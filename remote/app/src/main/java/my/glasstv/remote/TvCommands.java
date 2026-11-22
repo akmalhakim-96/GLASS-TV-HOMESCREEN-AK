@@ -78,5 +78,12 @@ final class TvCommands {
         return "cp -f '" + tmp + "' '" + dst + "' && rm -f '" + tmp + "' && echo GLASSTV_OK";
     }
 
+    /** Android's own screensaver (Google's) off, or back on, in the TV's settings. */
+    static String screensaver(boolean on) {
+        return on ? "settings put secure screensaver_enabled 1; settings put secure screensaver_activate_on_sleep 1"
+                : "settings put secure screensaver_enabled 0; settings put secure screensaver_activate_on_sleep 0; "
+                + "settings put secure screensaver_activate_on_dock 0";
+    }
+
     static String makeDir() { return "mkdir -p " + DIR; }
 }

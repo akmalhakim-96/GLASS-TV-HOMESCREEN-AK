@@ -63,7 +63,7 @@
         </LinearLayout>
         <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="Butang Wi-Fi di atas" />
         <Switch android:id="@+id/reduced" style="@style/Row" android:text="Animasi ringan" />
-        <Switch android:id="@+id/keepOn" style="@style/Row" android:text="Kekal di Home (tiada screensaver)" />
+        <Switch android:id="@+id/keepOn" style="@style/Row" android:text="Tiada screensaver (Home kekal di skrin)" />
 
         <Button android:id="@+id/sendHome" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
             android:text="Hantar Home" android:textColor="#14120F" android:backgroundTint="#B8E3C78C" />

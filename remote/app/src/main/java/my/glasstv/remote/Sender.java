@@ -69,6 +69,8 @@ final class Sender {
             cfg.delete();
 
             tv.shell(HomeSetup.GRANT_LOCATION);   // the Wi-Fi name on Home (installs from older versions lack it)
+            // "Kekal di Home" also turns Android's own screensaver off (and back on when switched off).
+            if (s.keepScreenOn != null) tv.shell(TvCommands.screensaver(!s.keepScreenOn));
             p.step("Memulakan semula Home…");
             tv.shell(TvCommands.restartHome());
             // Glass TV's remote-key service (Home on Xiaomi remotes, OK stops the azan): on again if an

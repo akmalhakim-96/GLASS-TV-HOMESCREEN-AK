@@ -148,4 +148,12 @@ public class HelpersTest {
         assertTrue(TvCommands.viaInbox(TvCommands.DIR + "/config.json"));
         assertFalse(TvCommands.viaInbox("/data/local/tmp/tvhome.apk"));   // the APK for pm install stays put
     }
+
+    @Test
+    public void screensaverOffAndBackOn() {
+        assertEquals("settings put secure screensaver_enabled 0; settings put secure screensaver_activate_on_sleep 0; "
+                + "settings put secure screensaver_activate_on_dock 0", TvCommands.screensaver(false));
+        assertEquals("settings put secure screensaver_enabled 1; settings put secure screensaver_activate_on_sleep 1",
+                TvCommands.screensaver(true));
+    }
 }
