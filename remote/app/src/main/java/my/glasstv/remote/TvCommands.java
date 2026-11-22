@@ -17,6 +17,11 @@ final class TvCommands {
             + "echo '== keadaan'; dumpsys package " + PKG + " | grep -m1 -o 'stopped=[a-z]*'; "
             + "appops get " + PKG + " SYSTEM_ALERT_WINDOW; "
             + "settings get secure enabled_accessibility_services; "
+            + "echo '== peti masuk'; echo -n 'Android '; getprop ro.build.version.release; "
+            + "dumpsys package " + PKG + " | grep -m1 -o 'versionCode=[0-9]*'; "
+            + "appops get " + PKG + " MANAGE_EXTERNAL_STORAGE; "
+            + "ls -la /sdcard/GlassTV /sdcard/GlassTV/.current 2>&1 | head -15; "
+            + "logcat -d -v time -s TvHome.Inbox:* | tail -5; "
             + "echo '== alarm'; dumpsys alarm | grep -A3 'com.gathin.tvhome' | head -20; "
             + "echo '== log'; logcat -d -v time -s TvHome.Azan:* TvHome.Prayer:* | tail -30; "
             + "logcat -d -v time | grep -i -E 'gathin.tvhome.*(kill|died|crash|force)|AzanActivity|AzanService' | tail -15";

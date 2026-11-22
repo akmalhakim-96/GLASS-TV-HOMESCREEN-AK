@@ -135,4 +135,11 @@ public class HelpersTest {
         assertTrue(TvCommands.CAN_WRITE_DIR.contains("GLASSTV_OK"));
         assertTrue(TvCommands.GRANT_FILES.contains("MANAGE_EXTERNAL_STORAGE allow"));
     }
+
+    @Test
+    public void reportCoversTheInbox() {
+        for (String part : new String[]{"ro.build.version.release", "versionCode", "MANAGE_EXTERNAL_STORAGE", "/sdcard/GlassTV", "TvHome.Inbox"}) {
+            assertTrue(part, TvCommands.AZAN_REPORT.contains(part));
+        }
+    }
 }
