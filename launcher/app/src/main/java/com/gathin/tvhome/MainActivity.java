@@ -1562,6 +1562,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
+    /** What the network pill last showed, for its glass menu. */
+    private String networkName;
+    private int networkIcon = R.drawable.ic_wifi;
+    private boolean networkOnline;
+
     private void updateWifiLabel() {
         if (btnWifi.getVisibility() == View.GONE) return;   // show_network_pill off
         String text = getString(R.string.wifi);
@@ -1620,13 +1625,38 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             btnWifi.setText(text);
         }
         btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+        networkName = text;
+        networkIcon = icon;
+        networkOnline = online;
     }
 
-    /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */
+    /**
+     * The network pill opens the VPN app when one is configured and installed; otherwise a small glass
+     * menu glides out of it with the network's name, and OK on that opens Wi-Fi settings.
+     */
     private void openNetworkPill() {
         Intent i = vpnApp.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(vpnApp);
         if (i == null && !vpnApp.isEmpty()) i = getPackageManager().getLaunchIntentForPackage(vpnApp);
-        open(i != null ? i : systemIntent(Settings.ACTION_WIFI_SETTINGS));
+        if (i != null) {
+            open(i);
+            return;
+        }
+        showNetworkMenu();
+    }
+
+    private void showNetworkMenu() {
+        if (openMenu != null) return;
+        updateWifiLabel();
+        FrameLayout panel = (FrameLayout) getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        String name = networkName != null ? networkName : getString(R.string.wifi);
+        addInputRow(rows, () -> closeMenu(false), networkIcon, name,
+                networkOnline ? TvInputManager.INPUT_STATE_CONNECTED : TvInputManager.INPUT_STATE_DISCONNECTED,
+                () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
+        int width = Math.max(btnWifi.getWidth(), (int) (220 * density));
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        width = Math.max(width, panel.getMeasuredWidth());
+        showMenu(panel, rows, btnWifi, width, false);
     }
 
 

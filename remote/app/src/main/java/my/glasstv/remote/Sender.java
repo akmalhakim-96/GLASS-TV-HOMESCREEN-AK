@@ -65,6 +65,7 @@ final class Sender {
             tv.push(cfg, TvCommands.DIR + "/config.json");
             cfg.delete();
 
+            tv.shell(HomeSetup.GRANT_LOCATION);   // the Wi-Fi name on Home (installs from older versions lack it)
             p.step("Memulakan semula Home…");
             tv.shell(TvCommands.restartHome());
             // Glass TV's remote-key service (Home on Xiaomi remotes, OK stops the azan): on again if an

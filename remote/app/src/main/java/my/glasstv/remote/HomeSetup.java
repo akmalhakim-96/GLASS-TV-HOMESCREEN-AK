@@ -40,6 +40,9 @@ final class HomeSetup {
             + "case \"$w\" in *" + PKG + "/*) break;; esac; sleep 1; done; "
             + "b=$(pidof " + PKG + "); echo \"$a|$b|$w\"";
 
+    /** Android 9 shows the Wi-Fi network's name only to apps with location permission. */
+    static final String GRANT_LOCATION = "pm grant " + PKG + " android.permission.ACCESS_FINE_LOCATION";
+
     /** A reason to stop, already in Malay. */
     static final class SetupException extends Exception {
         SetupException(String malay) {
@@ -144,6 +147,7 @@ final class HomeSetup {
             }
             try {
                 tv.shell("appops set " + PKG + " SYSTEM_ALERT_WINDOW allow");
+                tv.shell(GRANT_LOCATION);
                 tv.shell("am start -W -n " + COMPONENT);
                 p.step("Memastikan Glass TV berjalan…");
                 health[0] = tv.shell(HEALTH);

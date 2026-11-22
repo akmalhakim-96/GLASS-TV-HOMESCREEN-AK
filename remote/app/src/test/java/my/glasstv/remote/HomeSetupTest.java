@@ -93,4 +93,9 @@ public class HomeSetupTest {
         assertEquals(HomeSetup.NONE, HomeSetup.stockLauncher("android",
                 "com.gathin.tvhome/.MainActivity\ncom.duokan.factorytest/.Home\n"));
     }
+
+    @Test
+    public void wifiNameNeedsLocationPermission() {
+        assertEquals("pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION", HomeSetup.GRANT_LOCATION);
+    }
 }
