@@ -20,6 +20,8 @@ final class Tv implements Closeable {
     private static final int CONNECT_TIMEOUT_MS = 15_000;
 
     private final Dadb dadb;
+    /** Null until asked: whether this TV refuses writes into Glass TV's folder (then the inbox is used). */
+    private Boolean inbox;
 
     private Tv(Dadb dadb) {
         this.dadb = dadb;
@@ -58,6 +60,19 @@ final class Tv implements Closeable {
         return AdbKeyPair.read(priv, pub);
     }
 
+    /** Whether files go through the shared inbox (/sdcard/GlassTV) on this TV. */
+    boolean usesInbox() throws IOException {
+        if (inbox == null) {
+            shell(TvCommands.makeDir() + " 2>/dev/null");
+            inbox = !shell(TvCommands.CAN_WRITE_DIR).contains("GLASSTV_OK");
+        }
+        return inbox;
+    }
+
+    String readConfig() throws IOException {
+        return shell(TvCommands.readConfig(usesInbox()));
+    }
+
     /** The command's standard output. */
     String shell(String cmd) throws IOException {
         return dadb.shell(cmd).getOutput();
@@ -68,6 +83,11 @@ final class Tv implements Closeable {
      * app's folder) into /data/local/tmp and copied into place by the TV's own shell.
      */
     void push(File f, String remotePath) throws IOException {
+        if (usesInbox()) {
+            String in = TvCommands.inboxPath(remotePath);
+            shell("mkdir -p '" + in.substring(0, in.lastIndexOf('/')) + "'");
+            remotePath = in;
+        }
         try {
             dadb.push(f, remotePath, 0644, System.currentTimeMillis());
             return;

@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 /** Which Glass TV the TV runs, compared with the one bundled in this app (assets/glass-tv.apk). */
 final class TvVersion {
     /** versionCode of assets/glass-tv.apk; raise it whenever a new Glass TV is bundled. */
-    static final int BUNDLED = 11;
+    static final int BUNDLED = 12;
     static final String QUERY = "dumpsys package " + TvCommands.PKG + " | grep -m1 versionCode";
     private static final Pattern CODE = Pattern.compile("versionCode=(\\d+)");
 

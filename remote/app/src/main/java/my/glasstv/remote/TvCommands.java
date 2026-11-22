@@ -41,6 +41,25 @@ final class TvCommands {
     /** The picture behind the azan screen (Glass TV's AzanActivity). */
     static String azanWallpaperPath() { return DIR + "/azan_wallpaper.jpg"; }
 
+    /** The shared inbox Glass TV empties when it starts (TVs that refuse writes into its folder). */
+    static final String INBOX = "/sdcard/GlassTV";
+    /** Prints GLASSTV_OK when the TV lets us write into Glass TV's own folder. */
+    static final String CAN_WRITE_DIR = "touch " + DIR + "/.glasstv-w 2>/dev/null && rm -f " + DIR + "/.glasstv-w && echo GLASSTV_OK";
+    /** Lets Glass TV read the inbox (all-files access on Android 11+, storage on 10 and older). */
+    static final String GRANT_FILES = "appops set " + PKG + " MANAGE_EXTERNAL_STORAGE allow; "
+            + "pm grant " + PKG + " android.permission.READ_EXTERNAL_STORAGE 2>/dev/null; true";
+
+    /** Where a file meant for Glass TV's folder goes in the inbox; wallpapers.new is simply wallpapers there. */
+    static String inboxPath(String remote) {
+        String rel = remote.startsWith(DIR + "/") ? remote.substring(DIR.length() + 1) : remote;
+        if (rel.startsWith("wallpapers.new/")) rel = "wallpapers/" + rel.substring("wallpapers.new/".length());
+        return INBOX + "/" + rel;
+    }
+
+    static String readConfig(boolean inbox) {
+        return inbox ? "cat " + INBOX + "/.current/config.json 2>/dev/null" : readConfig();
+    }
+
     /** Where a file waits when the TV refuses a push straight into Glass TV's folder (Android 11+). */
     static String tmpPath(String name) { return "/data/local/tmp/glasstv-" + name; }
 

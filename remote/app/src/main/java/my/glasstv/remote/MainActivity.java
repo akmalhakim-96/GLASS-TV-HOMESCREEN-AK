@@ -290,7 +290,7 @@ public class MainActivity extends Activity {
         status.setText("Bersambung ke " + h + "… Jika TV bertanya, tanda Always allow dan tekan OK.");
         worker.execute(() -> {
             try (Tv tv = Tv.connect(this, h)) {
-                JSONObject cfg = ConfigMerge.read(tv.shell(TvCommands.readConfig()));
+                JSONObject cfg = ConfigMerge.read(tv.readConfig());
                 int pictures = 0;
                 try {
                     pictures = Integer.parseInt(tv.shell(TvCommands.countWallpapers()).trim());

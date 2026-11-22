@@ -125,4 +125,14 @@ public class HelpersTest {
                         + "rm -f '/data/local/tmp/glasstv-01.jpg' && echo GLASSTV_OK",
                 TvCommands.copyInto("/data/local/tmp/glasstv-01.jpg", TvCommands.DIR + "/wallpapers.new/01.jpg"));
     }
+
+    @Test
+    public void inboxForTvsThatRefuseOurFolder() {
+        assertEquals("/sdcard/GlassTV/config.json", TvCommands.inboxPath(TvCommands.DIR + "/config.json"));
+        assertEquals("/sdcard/GlassTV/wallpapers/01.jpg", TvCommands.inboxPath(TvCommands.DIR + "/wallpapers.new/01.jpg"));
+        assertEquals("cat /sdcard/GlassTV/.current/config.json 2>/dev/null", TvCommands.readConfig(true));
+        assertEquals(TvCommands.readConfig(), TvCommands.readConfig(false));
+        assertTrue(TvCommands.CAN_WRITE_DIR.contains("GLASSTV_OK"));
+        assertTrue(TvCommands.GRANT_FILES.contains("MANAGE_EXTERNAL_STORAGE allow"));
+    }
 }

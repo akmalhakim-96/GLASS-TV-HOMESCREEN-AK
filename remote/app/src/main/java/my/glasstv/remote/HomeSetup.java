@@ -148,6 +148,7 @@ final class HomeSetup {
             try {
                 tv.shell("appops set " + PKG + " SYSTEM_ALERT_WINDOW allow");
                 tv.shell(GRANT_LOCATION);
+                tv.shell(TvCommands.GRANT_FILES);   // the shared inbox, for TVs that refuse writes into its folder
                 tv.shell("am start -W -n " + COMPONENT);
                 p.step("Memastikan Glass TV berjalan…");
                 health[0] = tv.shell(HEALTH);

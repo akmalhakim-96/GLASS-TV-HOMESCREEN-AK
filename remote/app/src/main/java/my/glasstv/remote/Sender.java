@@ -23,11 +23,13 @@ final class Sender {
         try (Tv tv = Tv.connect(c, host)) {
             p.step("Bersambung ke TV…");
             tv.shell(TvCommands.makeDir());
-            String existing = tv.shell(TvCommands.readConfig());
+            boolean inbox = tv.usesInbox();
+            if (inbox) tv.shell(TvCommands.GRANT_FILES);
+            String existing = tv.readConfig();
 
             int sent = 0, skipped = 0;
             if (Boolean.FALSE.equals(s.places) && !photos.isEmpty()) {
-                tv.shell(TvCommands.prepareWallpapers());
+                tv.shell(inbox ? "rm -rf " + TvCommands.INBOX + "/wallpapers" : TvCommands.prepareWallpapers());
                 for (int i = 0; i < photos.size() && sent < PhotoMath.MAX_PHOTOS; i++) {
                     p.step("Menyediakan gambar " + (i + 1) + " daripada " + photos.size() + "…");
                     File f;
@@ -43,9 +45,10 @@ final class Sender {
                 }
                 String none = SendGate.afterPhotos(photos.size(), sent);
                 if (none != null) return none;   // keep the TV as it is rather than a blank background
-                tv.shell(TvCommands.swapWallpapers());
+                if (!inbox) tv.shell(TvCommands.swapWallpapers());   // in the inbox, Glass TV swaps them itself
             } else if (Boolean.TRUE.equals(s.places)) {
-                tv.shell(TvCommands.clearWallpapers());
+                tv.shell(inbox ? "mkdir -p " + TvCommands.INBOX + "; touch " + TvCommands.INBOX + "/clear-wallpapers"
+                        : TvCommands.clearWallpapers());
             }
 
             if (azanWallpaper != null) {
