@@ -75,6 +75,10 @@
         <LinearLayout android:id="@+id/prayers" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
         <Button android:id="@+id/pickAzanWallpaper" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih gambar latar azan" />
         <TextView android:id="@+id/azanWallpaperName" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" android:text="Gambar latar azan: tidak diubah" />
+        <RadioGroup android:id="@+id/azanFitMode" android:layout_width="match_parent" android:layout_height="wrap_content">
+            <RadioButton android:id="@+id/azanFit" style="@style/Row" android:checked="true" android:text="Gambar penuh (tanpa potong, tepi kabur)" />
+            <RadioButton android:id="@+id/azanFill" style="@style/Row" android:text="Penuh skrin (dipotong sedikit)" />
+        </RadioGroup>
         <Button android:id="@+id/pickAzan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih MP3 azan" />
         <TextView android:id="@+id/azanName" style="@style/Row" android:textSize="13sp" android:textColor="#99FFFFFF" android:text="Azan: tidak diubah" />
         <Button android:id="@+id/pickAzanSubuh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pilih MP3 azan Subuh" />

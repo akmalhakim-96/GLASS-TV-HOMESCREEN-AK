@@ -19,7 +19,7 @@ final class Sender {
 
     /** Runs on a background thread; returns the line shown under the button. */
     static String send(Context c, String host, Settings s, List<Uri> photos, boolean darken, boolean fit,
-                       Uri azanWallpaper, Uri azan, Uri azanSubuh, Progress p) {
+                       Uri azanWallpaper, boolean azanFit, Uri azan, Uri azanSubuh, Progress p) {
         try (Tv tv = Tv.connect(c, host)) {
             p.step("Bersambung ke TV…");
             tv.shell(TvCommands.makeDir());
@@ -53,7 +53,7 @@ final class Sender {
 
             if (azanWallpaper != null) {
                 p.step("Menyediakan gambar latar azan…");
-                File w = PhotoPrep.prepare(c, azanWallpaper, false, true, "azan_wallpaper.jpg");
+                File w = PhotoPrep.prepare(c, azanWallpaper, false, azanFit, "azan_wallpaper.jpg");
                 tv.push(w, TvCommands.azanWallpaperPath());
                 w.delete();
             }

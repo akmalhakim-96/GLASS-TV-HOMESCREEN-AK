@@ -614,10 +614,11 @@ public class MainActivity extends Activity {
         boolean dark = darken.isChecked();
         boolean whole = fit.isChecked();
         Uri aw = prayer ? azanWallpaper : null, a = prayer ? azan : null, as = prayer ? azanSubuh : null;
+        boolean azanWhole = ((RadioButton) findViewById(R.id.azanFit)).isChecked();
         setSending(true);
         result.setText("Menghantar…");
         worker.execute(() -> {
-            String line = Sender.send(this, h, part, sendPhotos, dark, whole, aw, a, as,
+            String line = Sender.send(this, h, part, sendPhotos, dark, whole, aw, azanWhole, a, as,
                     step -> runOnUiThread(() -> result.setText(step)));
             runOnUiThread(() -> {
                 setSending(false);
