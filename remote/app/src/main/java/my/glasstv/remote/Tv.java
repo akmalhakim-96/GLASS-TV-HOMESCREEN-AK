@@ -63,8 +63,23 @@ final class Tv implements Closeable {
         return dadb.shell(cmd).getOutput();
     }
 
+    /**
+     * Straight into place where the TV allows it; otherwise (Android 11+ refuses pushes into another
+     * app's folder) into /data/local/tmp and copied into place by the TV's own shell.
+     */
     void push(File f, String remotePath) throws IOException {
-        dadb.push(f, remotePath, 0644, System.currentTimeMillis());
+        try {
+            dadb.push(f, remotePath, 0644, System.currentTimeMillis());
+            return;
+        } catch (IOException direct) {
+            String tmp = TvCommands.tmpPath(f.getName());
+            dadb.push(f, tmp, 0644, System.currentTimeMillis());
+            String out = shell("(" + TvCommands.copyInto(tmp, remotePath) + ") 2>&1");
+            if (!out.contains("GLASSTV_OK")) {
+                shell("rm -f '" + tmp + "'");
+                throw new IOException("TV tidak benarkan fail disimpan (" + out.trim() + ")");
+            }
+        }
     }
 
     @Override

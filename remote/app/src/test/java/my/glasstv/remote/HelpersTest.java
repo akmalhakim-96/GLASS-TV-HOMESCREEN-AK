@@ -117,4 +117,12 @@ public class HelpersTest {
         assertFalse(TvVersion.needsUpdate(TvVersion.BUNDLED));
         assertFalse(TvVersion.needsUpdate(-1));   // not installed: a different message
     }
+
+    @Test
+    public void copyThroughTmpWhenDirectPushIsRefused() {
+        assertEquals("/data/local/tmp/glasstv-config.json", TvCommands.tmpPath("config.json"));
+        assertEquals("cp -f '/data/local/tmp/glasstv-01.jpg' '" + TvCommands.DIR + "/wallpapers.new/01.jpg' && "
+                        + "rm -f '/data/local/tmp/glasstv-01.jpg' && echo GLASSTV_OK",
+                TvCommands.copyInto("/data/local/tmp/glasstv-01.jpg", TvCommands.DIR + "/wallpapers.new/01.jpg"));
+    }
 }

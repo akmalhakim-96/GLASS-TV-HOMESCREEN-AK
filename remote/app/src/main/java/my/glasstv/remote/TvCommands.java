@@ -41,5 +41,13 @@ final class TvCommands {
     /** The picture behind the azan screen (Glass TV's AzanActivity). */
     static String azanWallpaperPath() { return DIR + "/azan_wallpaper.jpg"; }
 
+    /** Where a file waits when the TV refuses a push straight into Glass TV's folder (Android 11+). */
+    static String tmpPath(String name) { return "/data/local/tmp/glasstv-" + name; }
+
+    /** Copies a waiting file into place from inside the TV; prints GLASSTV_OK when it worked. */
+    static String copyInto(String tmp, String dst) {
+        return "cp -f '" + tmp + "' '" + dst + "' && rm -f '" + tmp + "' && echo GLASSTV_OK";
+    }
+
     static String makeDir() { return "mkdir -p " + DIR; }
 }
