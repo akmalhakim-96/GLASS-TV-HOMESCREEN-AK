@@ -721,7 +721,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         loadPrayerTimes();
         // Home came up over the azan screen (a Home key the accessibility service could not hold):
         // the azan screen goes back on top until OK.
-        if (AzanState.screenShowing()) {
+        if (AzanState.screenShowing() && !AzanService.overlayUp) {
             startActivity(new Intent(this, AzanActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
         }
         startWallpaperRotation();

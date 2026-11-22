@@ -41,15 +41,22 @@ public class AzanService extends Service {
     private AudioManager audio;
     private AudioFocusRequest focus;
     private boolean running;
+    private AzanScreen screen;
+    /** The floating azan screen is up (Home must not raise AzanActivity over it). */
+    static volatile boolean overlayUp;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         foreground();
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            finish();
+            if (screen != null) okPressed();
+            else finish();
             return START_NOT_STICKY;
         }
-        if (running) return START_NOT_STICKY;   // this one is already playing
+        if (running) {
+            if (screen == null || player != null) return START_NOT_STICKY;   // this one is still playing
+            clearScreen();   // the last azan's screen waited for an OK that never came: this prayer takes over
+        }
         if (!AzanState.begin()) {
             // The last azan's screen is still up (nobody pressed OK): this prayer takes it over.
             AzanState.end();
@@ -61,13 +68,24 @@ public class AzanService extends Service {
         Prayer prayer = intent == null ? null : Prayer.fromKey(String.valueOf(intent.getStringExtra(AzanScheduler.EXTRA_PRAYER)));
         if (prayer == null) prayer = Prayer.MAGHRIB;
         long at = intent == null ? System.currentTimeMillis() : intent.getLongExtra(AzanScheduler.EXTRA_AT, System.currentTimeMillis());
-        try {
-            startActivity(new Intent(this, AzanActivity.class)
-                    .putExtra(AzanScheduler.EXTRA_PRAYER, prayer.key())
-                    .putExtra(AzanScheduler.EXTRA_AT, at)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
-        } catch (RuntimeException e) {
-            Log.w(TAG, "azan screen refused: " + e);
+        // Over whatever is playing, which stays where it is: OK lifts the window and the film is there.
+        String time = PrayerBar.clock(java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), PrayerTimes.MY)
+                .toLocalTime(), android.text.format.DateFormat.is24HourFormat(this));
+        screen = AzanScreen.show(this, Config.load(this).prayer, prayer, time, () -> handler.post(this::okPressed));
+        if (screen != null) {
+            overlayUp = true;
+            AzanState.setScreen(true);
+            AzanState.setStopper(() -> handler.post(this::okPressed));
+        } else {
+            // No permission to float over apps: the azan screen as its own activity instead.
+            try {
+                startActivity(new Intent(this, AzanActivity.class)
+                        .putExtra(AzanScheduler.EXTRA_PRAYER, prayer.key())
+                        .putExtra(AzanScheduler.EXTRA_AT, at)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
+            } catch (RuntimeException e) {
+                Log.w(TAG, "azan screen refused: " + e);
+            }
         }
         // A screen that never came up must not keep Home and Back held.
         // Its own handler: stopping the sound must not cancel this check.
@@ -116,7 +134,25 @@ public class AzanService extends Service {
         }
     }
 
-    /** Stops the sound and the service. The azan screen stays until OK (AzanActivity ends the state). */
+    /** OK on the floating screen: lift it, stop the sound, end the azan. */
+    private void okPressed() {
+        clearScreen();
+        finish();
+    }
+
+    private void clearScreen() {
+        if (screen != null) screen.dismiss();
+        screen = null;
+        overlayUp = false;
+        AzanState.setScreen(false);
+        AzanState.setStopper(null);
+        AzanState.end();
+    }
+
+    /**
+     * Stops the sound. The service ends too unless the floating screen is still up: that waits for OK,
+     * even after the azan has finished.
+     */
     private void finish() {
         handler.removeCallbacksAndMessages(null);
         if (player != null) {
@@ -128,6 +164,7 @@ public class AzanService extends Service {
         }
         if (audio != null && focus != null) audio.abandonAudioFocusRequest(focus);
         focus = null;
+        if (screen != null) return;   // keep the screen (and this service) until OK
         running = false;
         stopForeground(true);
         stopSelf();
