@@ -74,7 +74,8 @@ public class HelpersTest {
 
     @Test
     public void tvMessageForRefused() {
-        assertTrue(Messages.forError(new java.net.ConnectException("refused")).startsWith("TV tidak dijumpai"));
+        assertEquals(Messages.DEBUG_OFF, Messages.forError(new java.net.ConnectException("refused")));
+        assertTrue(Messages.forError(new java.net.SocketTimeoutException("t")).startsWith("TV tidak dijumpai"));
         assertTrue(Messages.forError(new java.net.SocketTimeoutException("t")).startsWith("TV tidak dijumpai"));
         assertTrue(Messages.forError(new RuntimeException("boom")).startsWith("Gagal: "));
     }
