@@ -74,4 +74,18 @@ public class TvListTest {
         assertEquals("Allow di TV", TvStatus.chip(TvStatus.notAllowed()));
         assertEquals("Tiada", TvStatus.chip(TvStatus.unreachable()));
     }
+
+    @Test
+    public void refusedMeansDebuggingOff() {
+        assertEquals("Debug OFF", TvStatus.chip(TvStatus.fromError(new java.net.ConnectException("ECONNREFUSED"))));
+        assertEquals("Tiada", TvStatus.chip(TvStatus.fromError(new java.net.SocketTimeoutException("t"))));
+        assertEquals("Allow di TV", TvStatus.chip(TvStatus.fromError(new Tv.AuthPending(new java.io.IOException("x")))));
+    }
+
+    @Test
+    public void sameNetworkCheck() {
+        assertTrue(Subnet.sameNetwork("192.168.110.40", "192.168.110.122"));
+        assertFalse(Subnet.sameNetwork("192.168.0.6", "192.168.110.122"));
+        assertFalse(Subnet.sameNetwork(null, "192.168.110.122"));
+    }
 }

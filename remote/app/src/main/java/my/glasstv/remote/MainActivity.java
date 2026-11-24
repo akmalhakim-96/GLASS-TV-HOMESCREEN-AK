@@ -434,7 +434,7 @@ public class MainActivity extends Activity {
                 try (Tv tv = Tv.connect(this, e.ip)) {
                     label = TvStatus.of(TvVersion.parse(tv.shell(TvVersion.QUERY)), TvVersion.BUNDLED);
                 } catch (Exception ex) {
-                    label = Messages.ALLOW.equals(Messages.forError(ex)) ? TvStatus.notAllowed() : TvStatus.unreachable();
+                    label = TvStatus.fromError(ex);
                 }
                 final TvStatus l = label;
                 runOnUiThread(() -> {
@@ -442,7 +442,20 @@ public class MainActivity extends Activity {
                     renderTvs();
                 });
             }
-            runOnUiThread(() -> status.setText("Semakan selesai."));
+            String phone = Discovery.phoneIp(this);
+            StringBuilder note = new StringBuilder("Semakan selesai. IP telefon: " + (phone == null ? "tiada Wi-Fi" : phone) + ".");
+            for (TvList.Entry e : all) {
+                if (phone != null && !Subnet.sameNetwork(phone, e.ip)) {
+                    note.append("\n⚠️ ").append(e.name).append(" (").append(e.ip).append(") di rangkaian lain daripada telefon.");
+                }
+            }
+            boolean anyNoAnswer = false;
+            for (TvList.Entry e : all) {
+                TvStatus st = tvStatus.get(e.ip);
+                if (st != null && st.kind == TvStatus.Kind.UNREACHABLE && phone != null && Subnet.sameNetwork(phone, e.ip)) anyNoAnswer = true;
+            }
+            if (anyNoAnswer) note.append("\n\"Tiada\" pada rangkaian sama: TV mungkin tidur, atau Wi-Fi menyekat peranti berhubung sesama sendiri (biasa di sekolah/pejabat).");
+            runOnUiThread(() -> status.setText(note.toString()));
         });
     }
 

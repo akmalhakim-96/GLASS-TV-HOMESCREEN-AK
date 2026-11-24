@@ -2,7 +2,7 @@ package my.glasstv.remote;
 
 /** One TV's state in the list, in words. */
 final class TvStatus {
-    enum Kind { LATEST, OUTDATED, NOT_INSTALLED, UNREACHABLE, NOT_ALLOWED }
+    enum Kind { LATEST, OUTDATED, NOT_INSTALLED, UNREACHABLE, NOT_ALLOWED, DEBUG_OFF }
 
     final Kind kind;
     final int version;
@@ -21,6 +21,18 @@ final class TvStatus {
 
     static TvStatus notAllowed() { return new TvStatus(Kind.NOT_ALLOWED, -1); }
 
+    /**
+     * Why a TV could not be reached: waiting for Allow, refusing on port 5555 (it is there, debugging is
+     * off), or no answer at all (switched off, another network, or a Wi-Fi that keeps devices apart).
+     */
+    static TvStatus fromError(Throwable t) {
+        if (t instanceof Tv.AuthPending) return notAllowed();
+        for (Throwable c = t; c != null; c = c.getCause()) {
+            if (c instanceof java.net.ConnectException) return new TvStatus(Kind.DEBUG_OFF, -1);
+        }
+        return unreachable();
+    }
+
     /** The short coloured label in the TV list. */
     static String chip(TvStatus s) {
         switch (s.kind) {
@@ -28,6 +40,7 @@ final class TvStatus {
             case OUTDATED: return "Kemas kini";
             case NOT_INSTALLED: return "Belum pasang";
             case NOT_ALLOWED: return "Allow di TV";
+            case DEBUG_OFF: return "Debug OFF";
             default: return "Tiada";
         }
     }
@@ -39,6 +52,7 @@ final class TvStatus {
             case OUTDATED: return new int[]{0xFFE8711E, 0xFFFFF1E6};
             case NOT_INSTALLED: return new int[]{0xFF7A5CFF, 0xFFF0EBFF};
             case NOT_ALLOWED: return new int[]{0xFF4F6BFF, 0xFFEEF1FF};
+            case DEBUG_OFF: return new int[]{0xFFD9480F, 0xFFFFE8DD};
             default: return new int[]{0xFFE0335F, 0xFFFDE7EE};
         }
     }
@@ -49,6 +63,7 @@ final class TvStatus {
             case OUTDATED: return "⚠️ Glass TV " + s.version + " – perlu kemas kini";
             case NOT_INSTALLED: return "⭕ Glass TV belum dipasang";
             case NOT_ALLOWED: return "🔒 Tekan Always allow di TV";
+            case DEBUG_OFF: return "🔌 TV dijumpai, USB debugging OFF";
             default: return "❌ Tidak dijumpai";
         }
     }

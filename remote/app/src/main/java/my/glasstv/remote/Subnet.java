@@ -35,4 +35,11 @@ final class Subnet {
         }
         return out;
     }
+
+    /** Whether two IPv4 addresses share the first three numbers (the usual home or school /24). */
+    static boolean sameNetwork(String a, String b) {
+        if (a == null || b == null) return false;
+        int ia = a.lastIndexOf('.'), ib = b.lastIndexOf('.');
+        return ia > 0 && ib > 0 && a.substring(0, ia).equals(b.substring(0, ib));
+    }
 }
