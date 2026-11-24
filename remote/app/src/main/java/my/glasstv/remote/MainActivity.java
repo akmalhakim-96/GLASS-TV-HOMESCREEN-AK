@@ -380,8 +380,11 @@ public class MainActivity extends Activity {
 
     private void tvMenu(TvList.Entry e) {
         new AlertDialog.Builder(this).setTitle(e.name + " (" + e.ip + ")")
-                .setItems(new String[]{"Tukar nama", "Jadikan TV utama", "Buang dari senarai"}, (d, w) -> {
-                    if (w == 0) {
+                .setItems(new String[]{"Tukar nama", "Jadikan TV utama", "Buang dari senarai",
+                        "Pair (Android 11+ Wireless debugging)"}, (d, w) -> {
+                    if (w == 3) {
+                        pairDialog(e);
+                    } else if (w == 0) {
                         EditText in = new EditText(this);
                         in.setText(e.name);
                         in.setSelection(e.name.length());
@@ -401,6 +404,61 @@ public class MainActivity extends Activity {
                         saveTvs();
                     }
                 }).show();
+    }
+
+    /**
+     * Wireless debugging pairing: on the TV, Developer options → Wireless debugging → "Pair device with
+     * pairing code" shows a 6-digit code and "IP address & Port"; the port is found by itself when the
+     * Wi-Fi allows, otherwise typed from that screen.
+     */
+    private void pairDialog(TvList.Entry e) {
+        float dp = getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (20 * dp);
+        box.setPadding(pad, (int) (8 * dp), pad, 0);
+        TextView how = new TextView(this);
+        how.setText("Di TV: Settings → Developer options → Wireless debugging → \"Pair device with pairing code\". "
+                + "Biarkan tetingkap kod itu terbuka, kemudian taip kodnya di sini.\n"
+                + "(Bila TV tanya, tanda \"Always allow on this network\" supaya Wireless debugging kekal ON.)");
+        box.addView(how);
+        EditText code = new EditText(this);
+        code.setHint("Kod 6 nombor");
+        code.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        box.addView(code);
+        EditText port = new EditText(this);
+        port.setHint("Port (nombor selepas \":\" di TV) – boleh kosong");
+        port.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        box.addView(port);
+        new AlertDialog.Builder(this).setTitle("Pair " + e.name + " (" + e.ip + ")").setView(box)
+                .setPositiveButton("Pair", (d, w) -> {
+                    String c = code.getText().toString().trim();
+                    if (!AdbPairing.validCode(c)) {
+                        status.setText("Kod pairing mesti 6 nombor, seperti di skrin TV.");
+                        return;
+                    }
+                    int p;
+                    try {
+                        p = port.getText().toString().trim().isEmpty() ? -1 : Integer.parseInt(port.getText().toString().trim());
+                    } catch (NumberFormatException ex) {
+                        p = -1;
+                    }
+                    final int pairPort = p;
+                    status.setText("Pairing dengan " + e.name + "…");
+                    worker.execute(() -> {
+                        String msg;
+                        try {
+                            Tv.pair(this, e.ip, pairPort, c);
+                            msg = "✓ " + e.name + " sudah di-pair. Tekan Semak semua.";
+                        } catch (Exception ex) {
+                            msg = "PAIRING_PORT".equals(ex.getMessage())
+                                    ? "Port pairing tidak dijumpai sendiri (Wi-Fi ini menyekatnya). Taip nombor port yang tertera di TV selepas tanda \":\"."
+                                    : Messages.forError(ex);
+                        }
+                        String m = msg;
+                        runOnUiThread(() -> status.setText(m));
+                    });
+                }).setNegativeButton("Batal", null).show();
     }
 
     private void addIpDialog() {

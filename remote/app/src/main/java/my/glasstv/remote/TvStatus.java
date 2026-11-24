@@ -2,7 +2,7 @@ package my.glasstv.remote;
 
 /** One TV's state in the list, in words. */
 final class TvStatus {
-    enum Kind { LATEST, OUTDATED, NOT_INSTALLED, UNREACHABLE, NOT_ALLOWED, DEBUG_OFF }
+    enum Kind { LATEST, OUTDATED, NOT_INSTALLED, UNREACHABLE, NOT_ALLOWED, DEBUG_OFF, NEEDS_PAIRING }
 
     final Kind kind;
     final int version;
@@ -27,6 +27,7 @@ final class TvStatus {
      */
     static TvStatus fromError(Throwable t) {
         if (t instanceof Tv.AuthPending) return notAllowed();
+        if (t instanceof TlsAdb.NotPaired) return new TvStatus(Kind.NEEDS_PAIRING, -1);
         for (Throwable c = t; c != null; c = c.getCause()) {
             if (c instanceof java.net.ConnectException) return new TvStatus(Kind.DEBUG_OFF, -1);
         }
@@ -41,6 +42,7 @@ final class TvStatus {
             case NOT_INSTALLED: return "Belum pasang";
             case NOT_ALLOWED: return "Allow di TV";
             case DEBUG_OFF: return "Debug OFF";
+            case NEEDS_PAIRING: return "Perlu Pair";
             default: return "Tiada";
         }
     }
@@ -53,6 +55,7 @@ final class TvStatus {
             case NOT_INSTALLED: return new int[]{0xFF7A5CFF, 0xFFF0EBFF};
             case NOT_ALLOWED: return new int[]{0xFF4F6BFF, 0xFFEEF1FF};
             case DEBUG_OFF: return new int[]{0xFFD9480F, 0xFFFFE8DD};
+            case NEEDS_PAIRING: return new int[]{0xFF7A5CFF, 0xFFF0EBFF};
             default: return new int[]{0xFFE0335F, 0xFFFDE7EE};
         }
     }
@@ -63,7 +66,8 @@ final class TvStatus {
             case OUTDATED: return "⚠️ Glass TV " + s.version + " – perlu kemas kini";
             case NOT_INSTALLED: return "⭕ Glass TV belum dipasang";
             case NOT_ALLOWED: return "🔒 Tekan Always allow di TV";
-            case DEBUG_OFF: return "🔌 TV dijumpai, USB debugging OFF";
+            case DEBUG_OFF: return "🔌 TV dijumpai, debugging OFF";
+            case NEEDS_PAIRING: return "🔑 Tekan lama TV → Pair";
             default: return "❌ Tidak dijumpai";
         }
     }

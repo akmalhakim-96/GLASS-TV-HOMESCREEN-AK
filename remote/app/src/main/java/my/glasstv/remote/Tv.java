@@ -10,8 +10,9 @@ import dadb.AdbKeyPair;
 import dadb.Dadb;
 
 /**
- * One ADB-over-Wi-Fi connection to the TV (port 5555), with this phone's own key. The first time, the
- * TV asks "Allow USB debugging?"; with "Always allow" ticked it never asks this phone again.
+ * One ADB-over-Wi-Fi connection to the TV, with this phone's own key: port 5555 where the TV has it
+ * (the first time the TV asks "Allow USB debugging?"; with "Always allow" ticked it never asks again),
+ * otherwise Android 11+ Wireless debugging on its own port, over TLS, once this phone is paired.
  */
 final class Tv implements Closeable {
     static final int PORT = 5555;
@@ -38,6 +39,11 @@ final class Tv implements Closeable {
         // A plain TCP probe first, so "not found" and "waiting for Allow" are told apart.
         try (java.net.Socket probe = new java.net.Socket()) {
             probe.connect(new java.net.InetSocketAddress(host, PORT), CONNECT_TIMEOUT_MS);
+        } catch (java.net.ConnectException refused) {
+            // Nothing on 5555: Android 11+ keeps Wireless debugging on a port of its own, with TLS.
+            Tv tv = connectWireless(c, host);
+            if (tv != null) return tv;
+            throw refused;
         }
         Dadb d = Dadb.create(host, PORT, key(c), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS);
         Tv tv = new Tv(d);
@@ -51,6 +57,42 @@ final class Tv implements Closeable {
             throw new AuthPending(e);
         }
         return tv;
+    }
+
+    /** Null when the TV has no Wireless debugging port open; TlsAdb.NotPaired when it needs pairing. */
+    private static Tv connectWireless(Context c, String host) throws IOException {
+        int port = WirelessPorts.find(c, host);
+        if (port < 0) return null;
+        Dadb d = TlsAdb.connect(host, port, identity(c), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS);
+        WirelessPorts.remember(c, host, port);
+        Tv tv = new Tv(d);
+        try {
+            tv.shell("echo ok");
+        } catch (IOException | RuntimeException e) {
+            tv.close();
+            throw e instanceof IOException ? (IOException) e : new IOException(e);
+        }
+        return tv;
+    }
+
+    /**
+     * "Pair device with pairing code" on the TV: its 6-digit code, and the pairing port shown with it
+     * (found by itself when the Wi-Fi allows; pass -1 for that).
+     */
+    static void pair(Context c, String host, int pairingPort, String code) throws IOException {
+        int port = pairingPort > 0 ? pairingPort : Mdns.findPort(c, Mdns.PAIRING, host, 4_000);
+        if (port <= 0) throw new IOException("PAIRING_PORT");
+        AdbPairing.pair(host, port, code, identity(c), new Ekm());
+    }
+
+    private static AdbIdentity identity;
+
+    private static synchronized AdbIdentity identity(Context c) throws IOException {
+        if (identity == null) {
+            key(c);
+            identity = AdbIdentity.load(new File(c.getFilesDir(), "adbkey"), new File(c.getFilesDir(), "adbkey.pub"));
+        }
+        return identity;
     }
 
     private static synchronized AdbKeyPair key(Context c) {

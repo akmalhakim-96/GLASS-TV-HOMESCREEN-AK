@@ -41,7 +41,7 @@
                         <TextView style="@style/CardTitle" android:layout_width="0dp" android:layout_weight="1" android:text="TV saya" />
                         <TextView android:id="@+id/selectAll" style="@style/Link" android:text="Pilih semua" />
                     </LinearLayout>
-                    <TextView style="@style/Hint" android:text="Ketik TV untuk jadikan TV utama · tekan lama untuk nama / buang" />
+                    <TextView style="@style/Hint" android:text="Ketik TV untuk jadikan TV utama · tekan lama untuk nama / buang / Pair" />
                     <LinearLayout android:id="@+id/tvRows" android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="vertical" android:layout_marginTop="6dp" />
                     <TextView android:id="@+id/tvEmpty" style="@style/Hint" android:layout_marginTop="10dp" android:text="Belum ada TV. Tekan Cari TV." />
