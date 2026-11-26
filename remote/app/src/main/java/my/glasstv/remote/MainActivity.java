@@ -921,7 +921,7 @@ public class MainActivity extends Activity {
             done("Pilih sekurang-kurangnya satu waktu azan.");
             return;
         }
-        String gate = SendGate.check(filled, wallpaper && own.isChecked(), photos.size(), tvHasPhotos);
+        String gate = SendGate.check(section, filled, wallpaper && own.isChecked(), photos.size(), tvHasPhotos);
         if (gate != null) {
             done(gate);
             if (!filled) connect();

@@ -20,6 +20,15 @@ final class SendGate {
         return null;
     }
 
+    /**
+     * A section's own button (Gambar, Home, Solat, Bismillah) sends exactly what that page shows, and the
+     * rest of the TV stays as it is, so it need not wait for the TV's settings to be read. Only "Hantar
+     * semua" does, since it sends every page, including ones the owner has not looked at.
+     */
+    static String check(int section, boolean filled, boolean own, int photos, boolean tvHasPhotos) {
+        return check(filled || section != Settings.ALL, own, photos, tvHasPhotos);
+    }
+
     /** Photos were picked but none arrived: don't switch the TV away from what it shows now. */
     static String afterPhotos(int picked, int sent) {
         return picked > 0 && sent == 0 ? NO_PHOTO_SENT : null;

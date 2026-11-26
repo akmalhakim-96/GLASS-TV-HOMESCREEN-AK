@@ -15,6 +15,10 @@ public class FixesTest {
     public void sendRefusedUntilFilledFromTv() {
         assertEquals(SendGate.NOT_FILLED, SendGate.check(false, false, 0, false));
         assertNull(SendGate.check(true, false, 0, false));
+        // One section's own button sends what that page shows: no need to read the TV first.
+        assertNull(SendGate.check(Settings.WALLPAPER, false, true, 1, false));
+        assertEquals(SendGate.PICK_PHOTOS, SendGate.check(Settings.WALLPAPER, false, true, 0, false));
+        assertEquals(SendGate.NOT_FILLED, SendGate.check(Settings.ALL, false, false, 0, false));
     }
 
     // 2. The TV answered but nobody pressed Allow yet.
