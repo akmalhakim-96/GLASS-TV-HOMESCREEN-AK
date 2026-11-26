@@ -99,7 +99,7 @@ public class HelpersTest {
 
     @Test
     public void azanTestAndReportCommands() {
-        assertEquals("am broadcast -n com.gathin.tvhome/.AzanReceiver -a com.gathin.tvhome.AZAN_TEST", TvCommands.AZAN_TEST);
+        assertEquals("am broadcast -f 32 -n com.gathin.tvhome/.AzanReceiver -a com.gathin.tvhome.AZAN_TEST 2>&1", TvCommands.AZAN_TEST);
         for (String part : new String[]{"dumpsys alarm", "AzanActivity", "SYSTEM_ALERT_WINDOW", "stopped=", "TvHome.Azan", "date"}) {
             assertTrue(part, TvCommands.AZAN_REPORT.contains(part));
         }

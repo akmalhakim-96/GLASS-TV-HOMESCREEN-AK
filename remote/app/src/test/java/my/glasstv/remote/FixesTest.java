@@ -58,4 +58,11 @@ public class FixesTest {
         assertNull(SendGate.afterPhotos(3, 1));
         assertNull(SendGate.afterPhotos(0, 0));
     }
+
+    @Test public void azanTestSaysWhatHappenedOnEachTv() {
+        assertTrue(TvCommands.azanTestResult(17, "Broadcasting: Intent { }\nBroadcast completed: result=0").startsWith("Siap"));
+        assertEquals(TvCommands.AZAN_NOT_INSTALLED, TvCommands.azanTestResult(-1, ""));
+        assertTrue(TvCommands.azanTestResult(17, "Error: Bad component").startsWith("TV tidak terima"));
+        assertTrue(TvCommands.AZAN_TEST.contains(" -f 32 "));   // reaches Glass TV even when it is stopped
+    }
 }

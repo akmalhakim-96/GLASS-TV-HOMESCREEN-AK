@@ -8,7 +8,17 @@ final class TvCommands {
             "cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER";
 
     /** Plays the azan now, with the next prayer's name (Glass TV's AzanReceiver test action). */
-    static final String AZAN_TEST = "am broadcast -n " + PKG + "/.AzanReceiver -a " + PKG + ".AZAN_TEST";
+    /** -f 32: delivered even if Glass TV was force-stopped and has not run since. */
+    static final String AZAN_TEST = "am broadcast -f 32 -n " + PKG + "/.AzanReceiver -a " + PKG + ".AZAN_TEST 2>&1";
+    static final String AZAN_NOT_INSTALLED = "Glass TV belum dipasang di TV ini (tekan Pasang di tab TV).";
+
+    /** One TV's line for the azan test: "Siap" when the TV took the broadcast. */
+    static String azanTestResult(int glassVersion, String broadcastOutput) {
+        if (glassVersion < 0) return AZAN_NOT_INSTALLED;
+        if (broadcastOutput != null && broadcastOutput.contains("Broadcast completed")) return "Siap ✓ azan dimainkan";
+        String out = broadcastOutput == null ? "" : broadcastOutput.trim();
+        return "TV tidak terima arahan azan (" + (out.isEmpty() ? "tiada jawapan" : out) + ")";
+    }
 
     /** What the owner copies when an azan did not show: version, the alarm, permissions and the azan log. */
     static final String AZAN_REPORT = "echo '== masa'; date; "

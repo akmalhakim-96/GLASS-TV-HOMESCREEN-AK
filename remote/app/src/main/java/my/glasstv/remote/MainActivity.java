@@ -164,8 +164,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.pickAzanSubuh).setOnClickListener(v -> pick("audio/*", false, PICK_AZAN_SUBUH));
         findViewById(R.id.pickDock).setOnClickListener(v -> pickDock());
         findViewById(R.id.setupHome).setOnClickListener(v -> confirmSetupSelected());
-        findViewById(R.id.testAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_TEST,
-                "Azan diuji di TV. Tekan OK pada remote untuk kembali.", false));
+        findViewById(R.id.testAzan).setOnClickListener(v -> testAzan());
         findViewById(R.id.checkAzan).setOnClickListener(v -> runOnTv(TvCommands.AZAN_REPORT, "Semakan azan", true));
         send.setOnClickListener(v -> send(Settings.ALL));
         findViewById(R.id.sendWallpaper).setOnClickListener(v -> send(Settings.WALLPAPER));
@@ -519,6 +518,38 @@ public class MainActivity extends Activity {
 
     // ---- azan test and check -----------------------------------------------------------------------
 
+    /** Plays the azan now on every ticked TV, and says per TV whether it did. */
+    private void testAzan() {
+        List<String> targets = tvs.selectedIps();
+        if (targets.isEmpty() && !host().isEmpty()) targets = java.util.Collections.singletonList(host());
+        if (targets.isEmpty()) {
+            done("Tanda sekurang-kurangnya satu TV dalam TV SAYA.");
+            return;
+        }
+        List<String> all = targets;
+        done("Menguji azan di " + all.size() + " TV…");
+        worker.execute(() -> {
+            Batch batch = new Batch();
+            for (String ip : all) {
+                TvList.Entry e = tvs.find(ip);
+                String label = e != null ? e.name : ip;
+                String line;
+                try (Tv tv = Tv.connect(this, ip)) {
+                    int glass = TvVersion.parse(tv.shell(TvVersion.QUERY));
+                    line = TvCommands.azanTestResult(glass, glass < 0 ? "" : tv.shell(TvCommands.AZAN_TEST));
+                } catch (Exception ex) {
+                    line = Messages.forError(ex);
+                }
+                batch.add(label, line);
+            }
+            runOnUiThread(() -> {
+                done(batch.allOk() ? "Azan dimainkan (" + batch.headline() + "). Tekan OK pada remote untuk kembali."
+                        : "Uji azan: " + batch.headline());
+                if (!batch.allOk() || all.size() > 1) showReport("Uji azan: " + batch.headline(), batch.details());
+            });
+        });
+    }
+
     /** Runs one command on the TV; with showOutput, the answer opens in the copyable report dialog. */
     private void runOnTv(String cmd, String title, boolean showOutput) {
         String h = host();
@@ -535,7 +566,7 @@ public class MainActivity extends Activity {
                     if (showOutput) showReport(title, out.trim().isEmpty() ? "(tiada jawapan)" : out.trim());
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> status.setText(Messages.forError(e)));
+                runOnUiThread(() -> done(Messages.forError(e)));
             }
         });
     }
