@@ -334,6 +334,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // The verse and the prayer times hang from the same line as the place, on the right.
         rightShelf = findViewById(R.id.rightShelf);
         rightShelf.setVisibility(View.VISIBLE);
+        rightShelf.setAlpha(0f);   // shown once placed above the dock (showHero), never first at the top
         rightShelf.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, orr, ob) -> {
             if (heroBottom > 0) v.setY(heroBottom - v.getHeight());
         });
@@ -973,7 +974,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final String where = placeName != null ? placeCountry : "";
         int color = adapter.ambientColorAt(position);
         heroBottom = dockTopInRoot - HERO_GAP_DP * density;
-        if (rightShelf != null) rightShelf.setY(heroBottom - rightShelf.getHeight());
+        if (rightShelf != null) {
+            rightShelf.setY(heroBottom - rightShelf.getHeight());
+            rightShelf.setAlpha(1f);
+        }
         float y = heroBottom - heroShelf.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
 
