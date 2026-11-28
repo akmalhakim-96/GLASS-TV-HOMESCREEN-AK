@@ -1,0 +1,103 @@
+# Candidate verses for the daily verse on Home, in order of preference: short, complete, and suitable for a
+# family room and a classroom. fetch.py keeps the first 60 that fit the length limits.
+# Hope and ease
+94:5
+94:6
+93:5
+93:4
+3:139
+12:87
+# Trust and remembrance
+13:28
+2:152
+33:41
+33:42
+3:173
+9:129
+65:3
+# Patience
+2:153
+2:45
+11:115
+16:127
+3:200
+# Knowledge and learning
+96:1
+96:3
+96:4
+96:5
+20:114
+39:9
+58:11
+# Gratitude
+14:7
+55:13
+31:12
+# Parents and kindness
+17:24
+55:60
+41:34
+49:10
+2:83
+# Prayer
+2:43
+29:45
+20:14
+23:1
+23:2
+# Character
+68:4
+21:107
+25:63
+87:14
+3:134
+# Duas from the Quran
+20:25
+20:26
+2:201
+3:8
+25:74
+14:40
+14:41
+18:10
+21:87
+7:23
+28:24
+23:118
+17:80
+# Faith
+112:1
+112:2
+51:56
+15:99
+50:16
+6:162
+40:60
+2:186
+29:69
+3:31
+47:7
+2:155
+39:53
+2:286
+# More short ones
+94:7
+94:8
+93:3
+1:2
+1:5
+1:6
+112:3
+112:4
+87:1
+26:80
+26:83
+61:2
+61:3
+31:19
+2:263
+17:36
+89:27
+89:28
+55:26
+55:27
