@@ -13,6 +13,9 @@ final class Settings {
     List<String> dockApps;
     Integer columns;
     Boolean networkPill, reducedMotion, bismillah, keepScreenOn;
+    /** Home extras on the TV: the weather pill, the daily verse, and "ms" or "en" for both. */
+    Boolean weather, dailyVerse;
+    String displayLanguage;
     String backgroundColor;
     String zone, zoneName;
     List<String> azanPrayers;
@@ -32,6 +35,9 @@ final class Settings {
             s.networkPill = from.networkPill;
             s.reducedMotion = from.reducedMotion;
             s.keepScreenOn = from.keepScreenOn;
+            s.weather = from.weather;
+            s.dailyVerse = from.dailyVerse;
+            s.displayLanguage = from.displayLanguage;
             s.backgroundColor = from.backgroundColor;
         } else if (section == PRAYER) {
             s.zone = from.zone;
@@ -61,6 +67,9 @@ final class Settings {
         put(c, "show_network_pill", networkPill);
         put(c, "reduced_motion", reducedMotion);
         put(c, "keep_screen_on", keepScreenOn);
+        put(c, "weather", weather);
+        put(c, "daily_verse", dailyVerse);
+        put(c, "display_language", displayLanguage);
         put(c, "bismillah", bismillah);
         put(c, "background_color", backgroundColor);
         put(c, "prayer_zone", zone);

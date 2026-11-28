@@ -18,6 +18,9 @@ public class SectionsTest {
         s.networkPill = true;
         s.reducedMotion = false;
         s.keepScreenOn = true;
+        s.weather = true;
+        s.dailyVerse = true;
+        s.displayLanguage = "en";
         s.bismillah = true;
         s.zone = "SGR01";
         s.zoneName = "Shah Alam";
@@ -35,7 +38,8 @@ public class SectionsTest {
 
     @Test
     public void homeOnly() {
-        assertEquals(Set.of("dock_apps", "columns", "show_network_pill", "reduced_motion", "keep_screen_on"),
+        assertEquals(Set.of("dock_apps", "columns", "show_network_pill", "reduced_motion", "keep_screen_on",
+                        "weather", "daily_verse", "display_language"),
                 Settings.only(Settings.HOME, everything()).changes().keySet());
     }
 

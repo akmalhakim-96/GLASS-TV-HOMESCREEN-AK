@@ -676,6 +676,9 @@ public class MainActivity extends Activity {
         wifi.setChecked(c.optBoolean("show_network_pill", true));
         reduced.setChecked(c.optBoolean("reduced_motion", reduced.isChecked()));
         ((Switch) findViewById(R.id.keepOn)).setChecked(c.optBoolean("keep_screen_on", false));
+        ((Switch) findViewById(R.id.weather)).setChecked(c.optBoolean("weather", true));
+        ((Switch) findViewById(R.id.dailyVerse)).setChecked(c.optBoolean("daily_verse", true));
+        ((RadioButton) findViewById("en".equals(c.optString("display_language", "ms")) ? R.id.langEn : R.id.langMs)).setChecked(true);
         bismillah.setChecked(c.optBoolean("bismillah", true));
         String z = c.optString("prayer_zone", "");
         List<Zones.Zone> all = Zones.all();
@@ -936,6 +939,9 @@ public class MainActivity extends Activity {
         s.networkPill = wifi.isChecked();
         s.reducedMotion = reduced.isChecked();
         s.keepScreenOn = ((Switch) findViewById(R.id.keepOn)).isChecked();
+        s.weather = ((Switch) findViewById(R.id.weather)).isChecked();
+        s.dailyVerse = ((Switch) findViewById(R.id.dailyVerse)).isChecked();
+        s.displayLanguage = ((RadioButton) findViewById(R.id.langEn)).isChecked() ? "en" : "ms";
         s.bismillah = bismillah.isChecked();
         Zones.Zone z = Zones.all().get(zone.getSelectedItemPosition());
         s.zone = z.code;

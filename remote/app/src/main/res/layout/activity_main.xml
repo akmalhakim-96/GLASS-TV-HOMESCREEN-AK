@@ -118,6 +118,16 @@
                     <Switch android:id="@+id/wifi" style="@style/Row" android:checked="true" android:text="📶  Butang Wi-Fi di atas" />
                     <Switch android:id="@+id/reduced" style="@style/Row" android:text="🐢  Animasi ringan" />
                     <Switch android:id="@+id/keepOn" style="@style/Row" android:text="🖥️  Tiada screensaver" />
+                    <Switch android:id="@+id/weather" style="@style/Row" android:checked="true" android:text="⛅  Cuaca &amp; kualiti udara" />
+                    <Switch android:id="@+id/dailyVerse" style="@style/Row" android:checked="true" android:text="📖  Ayat al-Quran harian" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingTop="6dp" android:paddingBottom="6dp">
+                        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="🌐  Bahasa paparan" android:textColor="#1E2340" android:textSize="15sp" />
+                        <RadioGroup android:id="@+id/displayLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <RadioButton android:id="@+id/langMs" android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:text="Melayu" />
+                            <RadioButton android:id="@+id/langEn" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English" />
+                        </RadioGroup>
+                    </LinearLayout>
+                    <TextView style="@style/Hint" android:text="Lokasi cuaca ikut zon solat TV (tab Solat)." />
                 </LinearLayout>
                 <Button android:id="@+id/sendHome" style="@style/BtnGrad" android:background="@drawable/btn_home" android:text="Hantar Home" />
                 <LinearLayout style="@style/Card">
