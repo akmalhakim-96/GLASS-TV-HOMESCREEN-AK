@@ -180,6 +180,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Config config;
     /** Prayer times on Home (PrayerBar); prayerTimes is null until loaded, or when off. */
     private PrayerBar prayerBar;
+    /** Weather pill under the clock, and the daily verse over the prayer times (bottom right). */
+    private TextView weatherPill, verseRef, verseAr, verseText;
+    private View rightShelf;
+    private volatile Verses verses;
+    private volatile Weather.Reading weatherReading;
+    private volatile boolean extrasLoadRunning;
+    /** Share of the usable width the right shelf may take; the place's name keeps clear of it. */
+    private static final float RIGHT_SHELF_SHARE = 0.52f;
     private PrayerTimes prayerTimes;
     private volatile boolean prayerLoadRunning;
     private int prayerTicks;
@@ -245,7 +253,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateWifiLabel();
             refreshPlacesIfDue();
             updatePrayerBar();
+            updateExtras();
             if (++prayerTicks % 60 == 0) loadPrayerTimes();
+            if (prayerTicks % 10 == 0) loadExtras();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -321,6 +331,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroShelf.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, orr, ob) -> {
             if (heroBottom > 0) v.setY(heroBottom - v.getHeight());
         });
+        // The verse and the prayer times hang from the same line as the place, on the right.
+        rightShelf = findViewById(R.id.rightShelf);
+        rightShelf.setVisibility(View.VISIBLE);
+        rightShelf.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, orr, ob) -> {
+            if (heroBottom > 0) v.setY(heroBottom - v.getHeight());
+        });
+        int rightWidth = Math.round(usable * RIGHT_SHELF_SHARE);
+        verseRef = findViewById(R.id.verseRef);
+        verseAr = findViewById(R.id.verseAr);
+        verseText = findViewById(R.id.verseText);
+        verseAr.setMaxWidth(rightWidth);
+        verseText.setMaxWidth(rightWidth);
+        // The place's name stays clear of the right shelf.
+        heroNameMaxWidth = Math.min(heroNameMaxWidth, Math.round(usable * (1f - RIGHT_SHELF_SHARE) - 24 * density));
+        heroName.setMaxWidth(heroNameMaxWidth);
         btnWifi = findViewById(R.id.btnWifi);
         if (!cfg.showNetworkPill) btnWifi.setVisibility(View.GONE);
         shamsiDate = findViewById(R.id.shamsiDate);
@@ -397,6 +422,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         prayerPill.setShadowLayer(4, 0, 1, 0x99000000);
         prayerBar = new PrayerBar(this, prayerPill, findViewById(R.id.prayerChips), findViewById(R.id.hijriDate));
         loadPrayerTimes();
+        weatherPill = findViewById(R.id.weatherPill);
+        android.graphics.drawable.GradientDrawable weatherBg = new android.graphics.drawable.GradientDrawable();
+        weatherBg.setColor(0x9E0F1120);
+        weatherBg.setCornerRadius(16 * density);
+        weatherBg.setStroke(Math.max(1, Math.round(density)), 0x40FFFFFF);
+        weatherPill.setBackground(weatherBg);
+        weatherPill.setShadowLayer(4, 0, 1, 0x99000000);
+        loadExtras();
         // The apps rise into place on the first launch after the TV starts, and only then. Setting
         // the animation arms it for the grid's first draw, so on any later fresh start (Android
         // closing Home while an app was open) it is not set at all: armed, it drew the dock's tray
@@ -723,6 +756,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateInputsButton();
         updatePrayerBar();
         loadPrayerTimes();
+        loadExtras();
         // Home came up over the azan screen (a Home key the accessibility service could not hold):
         // the azan screen goes back on top until OK.
         if (AzanState.screenShowing() && !AzanService.overlayUp) {
@@ -939,6 +973,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final String where = placeName != null ? placeCountry : "";
         int color = adapter.ambientColorAt(position);
         heroBottom = dockTopInRoot - HERO_GAP_DP * density;
+        if (rightShelf != null) rightShelf.setY(heroBottom - rightShelf.getHeight());
         float y = heroBottom - heroShelf.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
 
@@ -1527,6 +1562,61 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     // ---- prayer times ----------------------------------------------------------------------------
+
+    /**
+     * Off the main thread: reads the bundled verses once, and fetches the weather when it is on and due
+     * (only ever from here, so only while Home is in front), then shows both.
+     */
+    private void loadExtras() {
+        if (extrasLoadRunning || weatherPill == null) return;
+        extrasLoadRunning = true;
+        final HomeExtras x = config.homeExtras;
+        final String zone = config.prayer.zone;
+        new Thread(() -> {
+            try {
+                if (verses == null) verses = Verses.load(this);
+                if (x.weatherOn(zone) && WeatherStore.dueNow(this)) WeatherStore.refresh(this, zone);
+                weatherReading = WeatherStore.cached(this);
+                handler.post(this::updateExtras);
+            } finally {
+                extrasLoadRunning = false;
+            }
+        }, "home-extras").start();
+    }
+
+    /** The weather pill and today's verse from what loadExtras last read; cheap, on the main thread. */
+    private void updateExtras() {
+        if (weatherPill == null) return;
+        HomeExtras x = config.homeExtras;
+        Weather.Reading r = weatherReading;
+        if (x.weatherOn(config.prayer.zone) && Weather.fresh(r, System.currentTimeMillis())) {
+            android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(Weather.weatherText(r, x.lang));
+            String air = Weather.airText(r, x.lang);
+            if (!air.isEmpty()) {
+                sb.append("  ·  ");
+                int from = sb.length();
+                sb.append(air);
+                sb.setSpan(new android.text.style.ForegroundColorSpan(Weather.bandColor(r.aqi)), from, sb.length(),
+                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            weatherPill.setText(sb);
+            weatherPill.setVisibility(View.VISIBLE);
+        } else {
+            weatherPill.setVisibility(View.GONE);
+        }
+        Verses all = verses;
+        Verses.Verse v = x.verse && all != null ? all.pick(java.time.LocalDate.now(PrayerTimes.MY)) : null;
+        int vis = v == null ? View.GONE : View.VISIBLE;
+        if (v != null && !v.ref.equals(verseRef.getTag())) {
+            verseRef.setTag(v.ref);
+            verseRef.setText(Verses.heading(v));
+            verseAr.setText(v.ar);
+            verseText.setText(v.translation(x.lang));
+        }
+        verseRef.setVisibility(vis);
+        verseAr.setVisibility(vis);
+        verseText.setVisibility(vis);
+    }
 
     private void updatePrayerBar() {
         if (prayerBar != null) prayerBar.update(prayerTimes, java.time.ZonedDateTime.now(PrayerTimes.MY));

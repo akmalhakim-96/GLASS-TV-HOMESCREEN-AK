@@ -77,12 +77,95 @@
             android:ellipsize="end"
             android:visibility="gone" />
 
-        <!-- The day's five prayer times (PrayerBar), the next one in gold. -->
+    </LinearLayout>
+
+    <!-- Bottom right, above the dock (placed in code like the place shelf): the day's Quran verse, then
+         the prayer times under "WAKTU SOLAT · Hijri date". Right-aligned; the width is set in code. -->
+    <LinearLayout
+        android:id="@+id/rightShelf"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="56dp"
+        android:orientation="vertical"
+        android:gravity="right"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/verseRef"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11.5sp"
+            android:fontFamily="@font/outfit"
+            android:fontVariationSettings="'wght' 500"
+            android:letterSpacing="0.2"
+            android:singleLine="true"
+            android:shadowColor="#99000000"
+            android:shadowRadius="6"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/verseAr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginTop="4dp"
+            android:gravity="right"
+            android:textDirection="rtl"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:shadowColor="#B3000000"
+            android:shadowRadius="8"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/verseText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginTop="4dp"
+            android:gravity="right"
+            android:textColor="#E6FFFFFF"
+            android:textSize="13.5sp"
+            android:fontFamily="@font/outfit"
+            android:fontVariationSettings="'wght' 300"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:shadowColor="#B3000000"
+            android:shadowRadius="6"
+            android:visibility="gone" />
+
+        <!-- "WAKTU SOLAT · 11 JAMADILAKHIR 1448H" (PrayerBar). -->
+        <TextView
+            android:id="@+id/hijriDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginTop="14dp"
+            android:singleLine="true"
+            android:includeFontPadding="false"
+            android:textColor="#D9FFFFFF"
+            android:textSize="11.5sp"
+            android:fontFamily="@font/outfit"
+            android:fontVariationSettings="'wght' 500"
+            android:letterSpacing="0.2"
+            android:textAllCaps="true"
+            android:shadowColor="#99000000"
+            android:shadowRadius="6"
+            android:visibility="gone" />
+
+        <!-- The day's six times as columns (PrayerBar), the next one in gold. -->
         <LinearLayout
             android:id="@+id/prayerChips"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_gravity="right"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal"
             android:visibility="gone" />
     </LinearLayout>
@@ -199,25 +282,23 @@
                     </FrameLayout>
                 </LinearLayout>
 
-                <!-- Hijri date from JAKIM ("11 Jamadilakhir 1448H") under the clock, when prayer times are on.
-                     Kept out of the date column: AM/PM is placed against that column's height. -->
+                <!-- Weather and air quality (WeatherStore), a dark glass pill under the clock. -->
                 <TextView
-                    android:id="@+id/hijriDate"
+                    android:id="@+id/weatherPill"
                     android:gravity="left"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="10dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
                     android:singleLine="true"
-                    android:ellipsize="end"
                     android:includeFontPadding="false"
-                    android:textColor="#D9FFFFFF"
-                    android:textSize="13sp"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13.5sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 500"
-                    android:letterSpacing="0.14"
-                    android:textAllCaps="true"
-                    android:shadowColor="#99000000"
-                    android:shadowRadius="6"
                     android:visibility="gone" />
             </LinearLayout>
 

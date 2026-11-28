@@ -23,4 +23,11 @@ public class PrayerBarTest {
         assertEquals("5:48 AM", PrayerBar.clock(LocalTime.of(5, 48), false));
         assertEquals("13:10", PrayerBar.clock(LocalTime.of(13, 10), true));
     }
+
+    @Test
+    public void headerCarriesTheHijriDate() {
+        assertEquals("WAKTU SOLAT · 11 Jamadilakhir 1448H", PrayerBar.header("11 Jamadilakhir 1448H"));
+        assertEquals("WAKTU SOLAT", PrayerBar.header(null));
+        assertEquals("WAKTU SOLAT", PrayerBar.header(""));
+    }
 }

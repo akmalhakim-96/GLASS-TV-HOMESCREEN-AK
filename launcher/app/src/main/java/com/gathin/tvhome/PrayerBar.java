@@ -2,7 +2,6 @@ package com.gathin.tvhome;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.format.DateFormat;
@@ -24,9 +23,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
- * Prayer times on Home: the next prayer in a pill in the top bar ("Zohor 1:10 PM · 7j 2m lagi"), the
- * day's five times as chips under the place's caption, the next one in gold, and the Hijri date under
- * the date. All of it is hidden when the feature is off or there is no JAKIM data for today.
+ * Prayer times on Home: the next prayer in a pill in the top bar ("Zohor 1:10 PM · 7j 2m lagi"), and at
+ * the bottom right "WAKTU SOLAT · Hijri date" over the day's times as columns, the next one in gold.
+ * All of it is hidden when the feature is off or there is no JAKIM data for today.
  */
 final class PrayerBar {
     private static final int GOLD = 0xFFFFCF7A;
@@ -51,6 +50,11 @@ final class PrayerBar {
         long min = Math.max(1, (d.getSeconds() + 59) / 60);
         if (min < 60) return min + " min lagi";
         return (min / 60) + "j" + (min % 60 == 0 ? "" : " " + (min % 60) + "m") + " lagi";
+    }
+
+    /** "WAKTU SOLAT · 11 Jamadilakhir 1448H" (shown in capitals). */
+    static String header(String hijri) {
+        return hijri == null || hijri.isEmpty() ? "WAKTU SOLAT" : "WAKTU SOLAT · " + hijri;
     }
 
     static String clock(LocalTime t, boolean h24) {
@@ -79,8 +83,8 @@ final class PrayerBar {
             pill.setVisibility(View.GONE);
         }
         String h = t.hijri(today);
-        hijri.setText(h == null ? "" : h);
-        hijri.setVisibility(h == null ? View.GONE : View.VISIBLE);
+        hijri.setText(header(h));
+        hijri.setVisibility(View.VISIBLE);
 
         chips.removeAllViews();
         for (Prayer p : Prayer.values()) {
@@ -90,27 +94,22 @@ final class PrayerBar {
         chips.setVisibility(View.VISIBLE);
     }
 
+    /** One prayer as a column: its name small above its time, the next one in gold. */
     private View chip(String label, String time, boolean next) {
-        LinearLayout chip = new LinearLayout(c);
-        chip.setGravity(Gravity.CENTER_VERTICAL);
-        int pad = Math.round(13 * dp);
-        chip.setPadding(pad, 0, pad, 0);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(15 * dp);
-        bg.setColor(next ? 0x8C8A6420 : 0x73000000);   // dark enough to read over a bright photo
-        bg.setStroke(Math.max(1, Math.round(dp)), next ? 0xE6FFD28C : 0x61FFFFFF);
-        chip.setBackground(bg);
-        TextView l = text(label.toUpperCase(Locale.ROOT), 11, 0xB3FFFFFF);
-        l.setLetterSpacing(0.08f);
-        chip.addView(l);
-        TextView v = text(time, 12.5f, 0xFFFFFFFF);
+        LinearLayout col = new LinearLayout(c);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER_HORIZONTAL);
+        TextView l = text(label, 12, next ? GOLD : 0xD9FFFFFF);
+        col.addView(l);
+        TextView v = text(time, 19, next ? GOLD : 0xFFFFFFFF);
+        v.setFontVariationSettings("'wght' 600");
         LinearLayout.LayoutParams vl = new LinearLayout.LayoutParams(-2, -2);
-        vl.leftMargin = Math.round(7 * dp);
-        chip.addView(v, vl);
-        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, Math.round(30 * dp));
-        cl.rightMargin = Math.round(8 * dp);
-        chip.setLayoutParams(cl);
-        return chip;
+        vl.topMargin = Math.round(4 * dp);
+        col.addView(v, vl);
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
+        cl.leftMargin = Math.round(20 * dp);
+        col.setLayoutParams(cl);
+        return col;
     }
 
     private TextView text(String s, float sp, int color) {
