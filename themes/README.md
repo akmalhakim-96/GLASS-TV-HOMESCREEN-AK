@@ -42,7 +42,10 @@ is ignored, and a file that doesn't parse is ignored as a whole, so a theme can 
 | `wallpaper_seconds` | 5 to 86400 | Seconds between pictures; when set, it wins over `wallpaper_minutes` |
 | `wallpaper_minutes` | 0 to 1440 | Minutes between pictures when the theme has a `wallpapers/` folder; 0 changes only when Home starts. Default 30 |
 | `cache_clean_days` | 0 to 90 | Days between clearing the TV's app caches, which the TV does itself (default 15); `0` turns it off. See [docs/cache-clean.md](../docs/cache-clean.md) |
-| `places` | bool | Pictures of places to visit (Bing's daily images, no key), renewed weekly with last week's deleted, each named with its country and a few lines about it; pictures with people in them are skipped. On by default, and they replace the theme's own pictures. `false`: the theme's own pictures, and the launcher never goes online |
+| `places` | bool | Pictures of places to visit (Bing's daily images, no key), renewed weekly with last week's deleted, each named with its country and a few lines about it; pictures with people in them are skipped. On by default, and they replace the theme's own pictures. `false`: the theme's own pictures (the launcher still fetches JAKIM prayer times and the weather when those are on) |
+| `weather` | bool | The pill under the clock: temperature, conditions and air quality ("Udara 50 Baik"; US AQI with Malaysia's band words, not the official APIMS reading), from Open-Meteo for the main town of `prayer_zone`, fetched at most hourly while Home is in front. On by default when the zone is known |
+| `daily_verse` | bool | A short Quran verse over the prayer times, one a day from 60 in `res/raw/ayat.json` (made by `tools/ayat/fetch.py` from Quran.com), the same on every TV. On by default |
+| `display_language` | `"ms"` / `"en"` | Language of the verse translation (Basmeih / Sahih International) and the weather words. Default `"ms"` |
 
 ## Wallpapers
 

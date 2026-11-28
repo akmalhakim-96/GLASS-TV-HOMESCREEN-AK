@@ -236,7 +236,9 @@ A theme is a folder with `config.json` (and optional `wallpaper.jpg` or `wallpap
 - The original Clean Your TV guide lives in [docs/CLEANYOURTV-README.md](docs/CLEANYOURTV-README.md); the tests
   read its TV table and counts. Keep its relative links pointing one level up (`../`).
 - Keep the launcher light: no new background services, no network use but the weekly places pictures (none with
-  `"places": false`), one wallpaper bitmap
+  `"places": false`), JAKIM prayer times (with `prayer_zone`) and the hourly weather pill from Open-Meteo
+  (`api.open-meteo.com`, `air-quality-api.open-meteo.com`; off with `"weather": false`), and only while Home is
+  in front, one wallpaper bitmap
   in memory, decoding off the main thread, nothing running while another app is in front.
 - Commits carry only the human author's identity. Don't add AI attribution lines.
 - Credit stays: this project is based on [Clean Your TV](https://github.com/Gathin23/cleanyourtv) by Gathin (MIT).
